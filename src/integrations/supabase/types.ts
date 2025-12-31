@@ -516,6 +516,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           blocked_at: string | null
           created_at: string | null
           first_name: string | null
@@ -528,6 +529,7 @@ export type Database = {
           show_avatar: boolean
           show_name: boolean
           show_username: boolean
+          subscription_tier: string
           telegram_channel: string | null
           telegram_id: number | null
           updated_at: string | null
@@ -537,6 +539,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           blocked_at?: string | null
           created_at?: string | null
           first_name?: string | null
@@ -549,6 +552,7 @@ export type Database = {
           show_avatar?: boolean
           show_name?: boolean
           show_username?: boolean
+          subscription_tier?: string
           telegram_channel?: string | null
           telegram_id?: number | null
           updated_at?: string | null
@@ -558,6 +562,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           blocked_at?: string | null
           created_at?: string | null
           first_name?: string | null
@@ -570,6 +575,7 @@ export type Database = {
           show_avatar?: boolean
           show_name?: boolean
           show_username?: boolean
+          subscription_tier?: string
           telegram_channel?: string | null
           telegram_id?: number | null
           updated_at?: string | null
@@ -712,6 +718,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "support_questions_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_products: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          is_active: boolean
+          link: string | null
+          media_type: string | null
+          media_url: string | null
+          price: number
+          title: string
+          updated_at: string
+          user_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          price: number
+          title: string
+          updated_at?: string
+          user_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          price?: number
+          title?: string
+          updated_at?: string
+          user_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_products_user_profile_id_fkey"
             columns: ["user_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"

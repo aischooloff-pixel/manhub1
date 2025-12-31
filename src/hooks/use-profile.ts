@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTelegram } from './use-telegram';
 
+export type SubscriptionTier = 'free' | 'plus' | 'premium';
+
 export interface Profile {
   id: string;
   telegram_id: number | null;
@@ -18,6 +20,8 @@ export interface Profile {
   show_avatar: boolean;
   show_name: boolean;
   show_username: boolean;
+  subscription_tier: SubscriptionTier;
+  bio: string | null;
 }
 
 async function extractEdgeErrorMessage(err: any): Promise<string> {
@@ -103,6 +107,8 @@ export function useProfile() {
           show_avatar: data.profile.show_avatar ?? true,
           show_name: data.profile.show_name ?? true,
           show_username: data.profile.show_username ?? true,
+          subscription_tier: data.profile.subscription_tier || 'free',
+          bio: data.profile.bio || null,
         };
         setProfile(profileData);
         setArticlesCount(data.articlesCount || 0);

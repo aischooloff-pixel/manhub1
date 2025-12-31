@@ -109,6 +109,7 @@ export default function Index() {
 
   const userName = profile?.first_name || 'друг';
   const isPremium = profile?.is_premium || false;
+  const subscriptionTier = profile?.subscription_tier || 'free';
 
   // Helper to apply privacy settings (admins see original data)
   const getAuthorDisplay = (author: Article['author']) => {
@@ -260,20 +261,15 @@ export default function Index() {
         {/* Playlists */}
         <PlaylistsSection className="mb-8" />
 
-        {/* AI Assistant - show after playlists if premium, otherwise after premium banner */}
-        {isPremium && (
-          <AIAssistantSection className="mb-8" />
-        )}
+        {/* AI Assistant - always visible, access controlled by subscription */}
+        <AIAssistantSection className="mb-8" subscriptionTier={subscriptionTier} />
 
         {/* Premium Banner */}
         {!isPremium && (
-          <>
-            <PremiumBanner 
-              className="mb-8" 
-              onClick={() => setIsPremiumOpen(true)}
-            />
-            <AIAssistantSection className="mb-8" />
-          </>
+          <PremiumBanner 
+            className="mb-8" 
+            onClick={() => setIsPremiumOpen(true)}
+          />
         )}
 
         {/* Latest Articles */}

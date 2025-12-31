@@ -8,6 +8,7 @@ import { EditArticleModal } from '@/components/articles/EditArticleModal';
 import { UserArticlesModal } from '@/components/profile/UserArticlesModal';
 import { AllArticlesModal } from '@/components/articles/AllArticlesModal';
 import { ArticleDetailModal } from '@/components/articles/ArticleDetailModal';
+import { UpgradeToPlusModal } from '@/components/profile/UpgradeToPlusModal';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, ChevronRight, FileText } from 'lucide-react';
@@ -26,6 +27,7 @@ export default function Hub() {
   const [isAllArticlesOpen, setIsAllArticlesOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
 
   const [allArticles, setAllArticles] = useState<HookArticle[]>([]);
   const [myArticles, setMyArticles] = useState<HookArticle[]>([]);
@@ -215,7 +217,12 @@ export default function Hub() {
 
       <BottomNav />
 
-      <CreateArticleModal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); handleArticleCreated(); }} />
+      <CreateArticleModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onSuccess={handleArticleCreated}
+        onDailyLimitReached={() => setIsUpgradeOpen(true)}
+      />
       <EditArticleModal isOpen={!!editingArticle} onClose={() => setEditingArticle(null)} article={editingArticle} onSave={handleEditArticle} />
       <UserArticlesModal
         isOpen={isMyArticlesOpen}
@@ -227,6 +234,7 @@ export default function Hub() {
       />
       <AllArticlesModal isOpen={isAllArticlesOpen} onClose={() => setIsAllArticlesOpen(false)} articles={filteredArticles.map(mapArticle)} title={selectedCategory ? `Статьи: ${selectedCategory.name}` : 'Все статьи'} />
       <ArticleDetailModal isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} article={selectedArticle} />
+      <UpgradeToPlusModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} feature="articles" />
     </div>
   );
 }

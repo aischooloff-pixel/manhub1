@@ -135,6 +135,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check article limit for free users (3 per day)
+    const subscriptionTier = profile.subscription_tier || 'free';
+    if (subscriptionTier === 'free') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { count, error: countError } = await supabase
+        .from('articles')
+        .select('*', { count: 'exact', head: true })
+        .eq('author_id', profile.id)
+        .gte('created_at', today.toISOString());
+
+      if (!countError && (count || 0) >= 3) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'daily_limit_reached',
+            message: 'Вы достигли лимита 3 статьи в день. Перейдите на Plus для безлимитных публикаций.'
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
+
     const preview = (article.preview || article.body || '').substring(0, 200);
 
     let mediaType = article.media_type;

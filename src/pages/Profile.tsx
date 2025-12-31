@@ -10,10 +10,11 @@ import { UserArticlesModal } from '@/components/profile/UserArticlesModal';
 import { ReputationHistoryModal } from '@/components/profile/ReputationHistoryModal';
 import { SocialLinksModal } from '@/components/profile/SocialLinksModal';
 import { SupportModal } from '@/components/profile/SupportModal';
+import { ProductsModal } from '@/components/profile/ProductsModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Settings, Crown, FileText, Bookmark, History, Star, Send, Globe, HelpCircle, MessageCircle, Heart, MessageSquare, PenLine, Trash2 } from 'lucide-react';
+import { Settings, Crown, FileText, Bookmark, History, Star, Send, Globe, HelpCircle, MessageCircle, Heart, MessageSquare, PenLine, Trash2, Package } from 'lucide-react';
 import { useProfile } from '@/hooks/use-profile';
 import { useArticles, Article } from '@/hooks/use-articles';
 import { useReputation } from '@/hooks/use-reputation';
@@ -45,6 +46,7 @@ export default function Profile() {
   const [isRepHistoryOpen, setIsRepHistoryOpen] = useState(false);
   const [isSocialLinksOpen, setIsSocialLinksOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isProductsOpen, setIsProductsOpen] = useState(false);
   const [userArticles, setUserArticles] = useState<Article[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
   const [reputation, setReputation] = useState(0);
@@ -351,6 +353,18 @@ export default function Profile() {
               <Settings className="h-5 w-5" />
             </Button>
           </div>
+
+          {/* Products Button for Premium users */}
+          {profile.subscription_tier === 'premium' && (
+            <Button
+              variant="outline"
+              className="w-full mt-4 gap-2"
+              onClick={() => setIsProductsOpen(true)}
+            >
+              <Package className="h-4 w-4" />
+              Мои продукты
+            </Button>
+          )}
         </section>
 
         {/* Premium Banner */}
@@ -613,6 +627,13 @@ export default function Profile() {
         onSave={handleSaveSocialLinks}
       />
       <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
+      {profile && (
+        <ProductsModal 
+          isOpen={isProductsOpen} 
+          onClose={() => setIsProductsOpen(false)} 
+          userProfileId={profile.id} 
+        />
+      )}
     </div>
   );
 }

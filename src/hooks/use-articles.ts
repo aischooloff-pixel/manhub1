@@ -119,11 +119,11 @@ export function useArticles() {
   }, []);
 
   // Create article via backend function
-  const createArticle = useCallback(async (articleData: CreateArticleData) => {
+  const createArticle = useCallback(async (articleData: CreateArticleData): Promise<any> => {
     const initData = getInitData();
     if (!initData) {
       toast.error('Необходимо авторизоваться через Telegram');
-      return null;
+      return { error: 'auth_required' };
     }
 
     setLoading(true);
@@ -134,7 +134,16 @@ export function useArticles() {
 
       if (error) {
         const msg = await extractEdgeErrorMessage(error);
+        // Check if it's a daily limit error
+        if (msg.includes('daily_limit_reached') || msg.includes('лимита')) {
+          return { error: 'daily_limit_reached' };
+        }
         throw new Error(msg);
+      }
+
+      // Check for limit error in response
+      if (data?.error === 'daily_limit_reached') {
+        return { error: 'daily_limit_reached', message: data.message };
       }
 
       if (!data?.article) {
@@ -151,11 +160,11 @@ export function useArticles() {
       }
 
       toast.success('Статья отправлена на модерацию');
-      return data.article;
+      return { article: data.article };
     } catch (err: any) {
       console.error('Error creating article:', err);
       toast.error(err?.message || 'Ошибка создания статьи');
-      return null;
+      return { error: 'unknown' };
     } finally {
       setLoading(false);
     }

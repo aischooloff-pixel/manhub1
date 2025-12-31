@@ -21,11 +21,13 @@ import { mockCategories } from '@/data/mockData';
 import { Send, Image, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useArticles } from '@/hooks/use-articles';
+import { UpgradeToPlusModal } from '@/components/profile/UpgradeToPlusModal';
 
 interface CreateArticleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onDailyLimitReached?: () => void;
 }
 
 // Extract video thumbnail from various platforms
@@ -41,7 +43,7 @@ function extractVideoThumbnail(url: string): string | null {
   return null;
 }
 
-export function CreateArticleModal({ isOpen, onClose, onSuccess }: CreateArticleModalProps) {
+export function CreateArticleModal({ isOpen, onClose, onSuccess, onDailyLimitReached }: CreateArticleModalProps) {
   const { createArticle, loading } = useArticles();
   const [formData, setFormData] = useState({
     category_id: '',
@@ -121,7 +123,7 @@ export function CreateArticleModal({ isOpen, onClose, onSuccess }: CreateArticle
       ? formData.sources.split(',').map(s => s.trim()).filter(Boolean)
       : undefined;
 
-    const article = await createArticle({
+    const result = await createArticle({
       category_id: formData.category_id,
       title: formData.title.trim(),
       topic: formData.topic.trim() || undefined,
@@ -133,7 +135,14 @@ export function CreateArticleModal({ isOpen, onClose, onSuccess }: CreateArticle
       sources: sourcesArray,
     });
 
-    if (article) {
+    // Check for daily limit error
+    if (result?.error === 'daily_limit_reached') {
+      onClose();
+      onDailyLimitReached?.();
+      return;
+    }
+
+    if (result?.article) {
       onClose();
       onSuccess?.();
       setFormData({

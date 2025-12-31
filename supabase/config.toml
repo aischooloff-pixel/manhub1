@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.tg-reviews]
 verify_jwt = false
+
+[functions.tg-manage-product]
+verify_jwt = false
