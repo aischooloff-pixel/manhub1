@@ -9,6 +9,7 @@ import { UserArticlesModal } from '@/components/profile/UserArticlesModal';
 import { FullArticlesModal } from '@/components/articles/FullArticlesModal';
 import { ArticleDetailModal } from '@/components/articles/ArticleDetailModal';
 import { UpgradeToPlusModal } from '@/components/profile/UpgradeToPlusModal';
+import { RulesModal, useRulesModal } from '@/components/hub/RulesModal';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, ChevronRight, FileText } from 'lucide-react';
@@ -20,6 +21,7 @@ import { toast } from 'sonner';
 
 export default function Hub() {
   const { getApprovedArticles, getUserArticles, updateArticle, deleteArticle } = useArticles();
+  const { showRules, closeRules, remainingViews } = useRulesModal();
   const { profile, isAdmin } = useProfile();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -234,6 +236,7 @@ export default function Hub() {
       <FullArticlesModal isOpen={isAllArticlesOpen} onClose={() => setIsAllArticlesOpen(false)} initialArticles={allArticles.map(mapArticle)} initialCategory={selectedCategory} onArticleCreated={handleArticleCreated} />
       <ArticleDetailModal isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} article={selectedArticle} />
       <UpgradeToPlusModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} feature="articles" />
+      <RulesModal isOpen={showRules} onClose={closeRules} remainingViews={remainingViews} />
     </div>
   );
 }
