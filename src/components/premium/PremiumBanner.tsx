@@ -56,7 +56,7 @@ export function PremiumBanner({ className, onClick }: PremiumBannerProps) {
         </div>
 
         <Button className="w-full font-semibold" size="lg">
-          Перейти на Premium
+          Перейти на Plus
         </Button>
       </div>
     </section>

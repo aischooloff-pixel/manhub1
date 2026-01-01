@@ -426,7 +426,7 @@ export default function Profile() {
                   <Crown className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-heading text-sm font-semibold">Перейти на Premium</h3>
+                  <h3 className="font-heading text-sm font-semibold">Перейти на Plus</h3>
                   <p className="text-xs text-muted-foreground">Безлимитные публикации и приоритетная модерация</p>
                 </div>
               </div>
