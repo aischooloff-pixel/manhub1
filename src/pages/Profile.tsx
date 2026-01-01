@@ -260,6 +260,9 @@ export default function Profile() {
 
   // Blocked user modal
   if (profile.is_blocked) {
+    const blockedUntilDate = profile.blocked_until ? new Date(profile.blocked_until) : null;
+    const isTemporaryBlock = blockedUntilDate && blockedUntilDate > new Date();
+    
     return (
       <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background">
         <div className="text-center p-8">
@@ -268,6 +271,17 @@ export default function Profile() {
           </div>
           <h1 className="text-2xl font-bold text-destructive mb-4">Аккаунт заблокирован</h1>
           <p className="text-muted-foreground mb-2">Вы не можете использовать ManHub.</p>
+          {isTemporaryBlock && (
+            <p className="text-sm text-yellow-500 mb-2">
+              Блокировка до: {blockedUntilDate.toLocaleDateString('ru-RU', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">Если вы считаете, что это ошибка, обратитесь в поддержку.</p>
         </div>
       </div>

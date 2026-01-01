@@ -392,7 +392,10 @@ async function handleUserProfile(callbackQuery: any, telegramId: string) {
   if (user.is_blocked) {
     buttons.push([{ text: '✅ Разблокировать', callback_data: `unblock:${user.telegram_id}` }]);
   } else {
-    buttons.push([{ text: '🚫 Заблокировать', callback_data: `block:${user.telegram_id}` }]);
+    buttons.push([
+      { text: '🚫 Блок навсегда', callback_data: `block:${user.telegram_id}` },
+      { text: '⏱ Блок временно', callback_data: `block_temp_menu:${user.telegram_id}` }
+    ]);
   }
 
   buttons.push([{ text: '◀️ Назад к списку', callback_data: 'users:0' }]);
@@ -483,7 +486,10 @@ async function handleSearch(chatId: number, userId: number, query: string) {
     if (user.is_blocked) {
       buttons.push([{ text: '✅ Разблокировать', callback_data: `unblock:${user.telegram_id}` }]);
     } else {
-      buttons.push([{ text: '🚫 Заблокировать', callback_data: `block:${user.telegram_id}` }]);
+      buttons.push([
+        { text: '🚫 Блок навсегда', callback_data: `block:${user.telegram_id}` },
+        { text: '⏱ Блок временно', callback_data: `block_temp_menu:${user.telegram_id}` }
+      ]);
     }
 
     const keyboard = { inline_keyboard: buttons };
@@ -1566,12 +1572,13 @@ async function handleBlockUser(callbackQuery: any, telegramId: string) {
     return;
   }
 
-  // Block user and revoke premium
+  // Block user permanently and revoke premium
   const { error } = await supabase
     .from('profiles')
     .update({ 
       is_blocked: true,
       blocked_at: new Date().toISOString(),
+      blocked_until: null, // permanent block
       is_premium: false,
       premium_expires_at: null,
       updated_at: new Date().toISOString()
@@ -1618,6 +1625,7 @@ async function handleUnblockUser(callbackQuery: any, telegramId: string) {
     .update({ 
       is_blocked: false,
       blocked_at: null,
+      blocked_until: null,
       updated_at: new Date().toISOString()
     })
     .eq('id', profile.id);
@@ -1638,6 +1646,135 @@ async function handleUnblockUser(callbackQuery: any, telegramId: string) {
   
   const username = profile.username ? `@${profile.username}` : telegramId;
   await sendAdminMessage(message.chat.id, `✅ Пользователь ${username} разблокирован`);
+}
+
+// Handle temporary block menu
+async function handleTempBlockMenu(callbackQuery: any, telegramId: string) {
+  const { id, message } = callbackQuery;
+  
+  await answerCallbackQuery(id);
+  
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '1 час', callback_data: `block_temp:${telegramId}:1h` },
+        { text: '6 часов', callback_data: `block_temp:${telegramId}:6h` },
+        { text: '12 часов', callback_data: `block_temp:${telegramId}:12h` }
+      ],
+      [
+        { text: '1 день', callback_data: `block_temp:${telegramId}:1d` },
+        { text: '3 дня', callback_data: `block_temp:${telegramId}:3d` },
+        { text: '7 дней', callback_data: `block_temp:${telegramId}:7d` }
+      ],
+      [
+        { text: '14 дней', callback_data: `block_temp:${telegramId}:14d` },
+        { text: '30 дней', callback_data: `block_temp:${telegramId}:30d` }
+      ],
+      [{ text: '◀️ Назад', callback_data: `user:${telegramId}` }]
+    ]
+  };
+  
+  await editAdminMessage(message.chat.id, message.message_id, `⏱ <b>Временная блокировка</b>
+
+Выберите срок блокировки:`, { reply_markup: keyboard });
+}
+
+// Handle temporary block action
+async function handleTempBlock(callbackQuery: any, telegramId: string, duration: string) {
+  const { id, message } = callbackQuery;
+  
+  const { data: profile, error: findError } = await supabase
+    .from('profiles')
+    .select('id, username, is_premium')
+    .eq('telegram_id', telegramId)
+    .maybeSingle();
+    
+  if (findError || !profile) {
+    await answerCallbackQuery(id, '❌ Пользователь не найден');
+    return;
+  }
+  
+  // Parse duration
+  let blockedUntil: Date;
+  let durationText: string;
+  const now = new Date();
+  
+  switch (duration) {
+    case '1h':
+      blockedUntil = new Date(now.getTime() + 1 * 60 * 60 * 1000);
+      durationText = '1 час';
+      break;
+    case '6h':
+      blockedUntil = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+      durationText = '6 часов';
+      break;
+    case '12h':
+      blockedUntil = new Date(now.getTime() + 12 * 60 * 60 * 1000);
+      durationText = '12 часов';
+      break;
+    case '1d':
+      blockedUntil = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+      durationText = '1 день';
+      break;
+    case '3d':
+      blockedUntil = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      durationText = '3 дня';
+      break;
+    case '7d':
+      blockedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      durationText = '7 дней';
+      break;
+    case '14d':
+      blockedUntil = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      durationText = '14 дней';
+      break;
+    case '30d':
+      blockedUntil = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      durationText = '30 дней';
+      break;
+    default:
+      await answerCallbackQuery(id, '❌ Неверный срок');
+      return;
+  }
+  
+  // Block user temporarily
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      is_blocked: true,
+      blocked_at: now.toISOString(),
+      blocked_until: blockedUntil.toISOString(),
+      updated_at: now.toISOString()
+    })
+    .eq('id', profile.id);
+    
+  if (error) {
+    console.error('Error temp blocking user:', error);
+    await answerCallbackQuery(id, '❌ Ошибка');
+    return;
+  }
+  
+  // Notify user
+  const formattedDate = blockedUntil.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  await sendUserMessage(telegramId, `🚫 <b>Ваш аккаунт временно заблокирован</b>
+
+Срок: ${durationText}
+Разблокировка: ${formattedDate}
+
+Если вы считаете, что это ошибка, обратитесь в поддержку.`);
+
+  await answerCallbackQuery(id, `🚫 Заблокирован на ${durationText}`);
+  await editMessageReplyMarkup(message.chat.id, message.message_id);
+  
+  const username = profile.username ? `@${profile.username}` : telegramId;
+  await sendAdminMessage(message.chat.id, `🚫 Пользователь ${username} заблокирован на ${durationText} (до ${formattedDate})`);
 }
 
 // Handle /pending command - show pending articles
@@ -3775,6 +3912,10 @@ async function handleCallbackQuery(callbackQuery: any) {
     await handlePremiumExtend(callbackQuery, param, days);
   } else if (action === 'block') {
     await handleBlockUser(callbackQuery, param);
+  } else if (action === 'block_temp_menu') {
+    await handleTempBlockMenu(callbackQuery, param);
+  } else if (action === 'block_temp') {
+    await handleTempBlock(callbackQuery, param, param2);
   } else if (action === 'unblock') {
     await handleUnblockUser(callbackQuery, param);
   } else if (action === 'question') {

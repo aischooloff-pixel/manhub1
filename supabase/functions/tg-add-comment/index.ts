@@ -49,6 +49,17 @@ async function verifyTelegramInitData(initData: string): Promise<{ user: any | n
   }
 }
 
+// Extract @username mentions from text
+function extractMentions(text: string): string[] {
+  const regex = /@([a-zA-Z0-9_]{1,32})/g;
+  const matches: string[] = [];
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    matches.push(match[1].toLowerCase());
+  }
+  return [...new Set(matches)]; // Remove duplicates
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -151,6 +162,36 @@ Deno.serve(async (req) => {
           message: `прокомментировал "${articleTitle}"`,
         });
       console.log(`Notification created for author ${article.author_id}`);
+    }
+
+    // Handle @username mentions
+    const mentions = extractMentions(body);
+    if (mentions.length > 0) {
+      // Find mentioned users
+      const { data: mentionedUsers } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('username', mentions);
+
+      if (mentionedUsers && mentionedUsers.length > 0) {
+        const articleTitle = article.title?.substring(0, 50) || 'статью';
+        
+        // Create notifications for each mentioned user (except the comment author)
+        for (const mentionedUser of mentionedUsers) {
+          if (mentionedUser.id !== profile.id) {
+            await supabase
+              .from('notifications')
+              .insert({
+                user_profile_id: mentionedUser.id,
+                from_user_id: profile.id,
+                article_id: articleId,
+                type: 'mention',
+                message: `упомянул вас в комментарии к "${articleTitle}"`,
+              });
+            console.log(`Mention notification created for @${mentionedUser.username}`);
+          }
+        }
+      }
     }
 
     console.log(`Comment added to article ${articleId} by user ${tgUser.id}${parentId ? ` (reply to ${parentId})` : ''}`);

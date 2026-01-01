@@ -116,23 +116,34 @@ export function ProfileModal({ user: defaultUser, isOpen, onClose }: ProfileModa
           <div className="p-6">
             {/* Profile Header */}
             <div className="mb-6 flex flex-col items-center text-center">
-              <div className="relative mb-4">
+              <button
+                onClick={() => handleMenuClick('articles')}
+                className="relative mb-4 group cursor-pointer"
+              >
                 <img
                   src={displayUser.avatar_url}
                   alt={displayUser.first_name}
-                  className="h-20 w-20 rounded-full border-2 border-border"
+                  className="h-20 w-20 rounded-full border-2 border-border transition-transform group-hover:scale-105"
                 />
                 {displayUser.is_premium && (
                   <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-background">
                     <Crown className="h-3 w-3" />
                   </div>
                 )}
-              </div>
+              </button>
 
-              <h2 className="mb-1 font-heading text-xl font-semibold">
+              <button 
+                onClick={() => handleMenuClick('articles')}
+                className="mb-1 font-heading text-xl font-semibold hover:text-primary transition-colors"
+              >
                 {displayUser.first_name} {displayUser.last_name}
-              </h2>
-              <p className="mb-3 text-sm text-muted-foreground">@{displayUser.username}</p>
+              </button>
+              <button 
+                onClick={() => handleMenuClick('articles')}
+                className="mb-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                @{displayUser.username}
+              </button>
 
               <button
                 onClick={() => handleMenuClick('articles')}

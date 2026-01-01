@@ -14,6 +14,7 @@ export interface Profile {
   reputation: number;
   is_premium: boolean;
   is_blocked: boolean;
+  blocked_until: string | null;
   telegram_channel: string | null;
   website: string | null;
   created_at: string | null;
@@ -107,6 +108,7 @@ export function useProfile() {
           reputation: data.profile.reputation || 0,
           is_premium: data.profile.is_premium || false,
           is_blocked: data.profile.is_blocked || false,
+          blocked_until: data.profile.blocked_until || null,
           show_avatar: data.profile.show_avatar ?? true,
           show_name: data.profile.show_name ?? true,
           show_username: data.profile.show_username ?? true,
