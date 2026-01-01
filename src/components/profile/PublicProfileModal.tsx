@@ -671,8 +671,6 @@ export function PublicProfileModal({ isOpen, onClose, authorId }: PublicProfileM
           youtube_url: `https://youtube.com/watch?v=${videoToPlay.id}`,
           description: '',
           thumbnail_url: '',
-          duration: '',
-          created_at: new Date().toISOString(),
         } : null}
       />
 

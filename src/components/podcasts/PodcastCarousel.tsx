@@ -47,17 +47,7 @@ export function PodcastCarousel({ title, className }: PodcastCarouselProps) {
               podcasts.map((podcast, index) => (
                 <PodcastCard
                   key={podcast.id}
-                  podcast={{
-                    id: podcast.id,
-                    youtube_url: podcast.youtube_url,
-                    youtube_id: podcast.youtube_id,
-                    title: podcast.title,
-                    description: podcast.description || '',
-                    thumbnail_url: podcast.thumbnail_url || `https://img.youtube.com/vi/${podcast.youtube_id}/maxresdefault.jpg`,
-                    duration: '',
-                    channel_name: 'BoysHub',
-                    created_at: podcast.created_at || '',
-                  }}
+                  podcast={podcast}
                   onPlay={() => handlePlay(podcast)}
                   className="animate-slide-up"
                   style={{ animationDelay: `${index * 100}ms` }}
@@ -69,17 +59,7 @@ export function PodcastCarousel({ title, className }: PodcastCarouselProps) {
       </section>
 
       <PodcastPlayerModal
-        podcast={selectedPodcast ? {
-          id: selectedPodcast.id,
-          youtube_url: selectedPodcast.youtube_url,
-          youtube_id: selectedPodcast.youtube_id,
-          title: selectedPodcast.title,
-          description: selectedPodcast.description || '',
-          thumbnail_url: selectedPodcast.thumbnail_url || `https://img.youtube.com/vi/${selectedPodcast.youtube_id}/maxresdefault.jpg`,
-          duration: '',
-          channel_name: 'BoysHub',
-          created_at: selectedPodcast.created_at || '',
-        } : null}
+        podcast={selectedPodcast}
         isOpen={!!selectedPodcast}
         onClose={() => setSelectedPodcast(null)}
       />

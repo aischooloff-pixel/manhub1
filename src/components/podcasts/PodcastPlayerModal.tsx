@@ -1,10 +1,19 @@
 import { X } from 'lucide-react';
-import { Podcast } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+interface PodcastPlayerPodcast {
+  id: string;
+  youtube_url: string;
+  youtube_id: string;
+  title: string;
+  description?: string | null;
+  thumbnail_url?: string | null;
+  created_at?: string | null;
+}
+
 interface PodcastPlayerModalProps {
-  podcast: Podcast | null;
+  podcast: PodcastPlayerPodcast | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -50,9 +59,11 @@ export function PodcastPlayerModal({ podcast, isOpen, onClose }: PodcastPlayerMo
           />
         </div>
 
-        <div className="p-4">
-          <p className="text-sm text-muted-foreground">{podcast.description}</p>
-        </div>
+        {podcast.description && (
+          <div className="p-4">
+            <p className="text-sm text-muted-foreground">{podcast.description}</p>
+          </div>
+        )}
       </div>
     </div>
   );

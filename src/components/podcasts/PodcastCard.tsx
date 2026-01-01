@@ -1,11 +1,22 @@
-import { Play, Clock } from 'lucide-react';
-import { Podcast } from '@/types';
+import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+interface PodcastCardPodcast {
+  id: string;
+  youtube_url: string;
+  youtube_id: string;
+  title: string;
+  description?: string | null;
+  thumbnail_url?: string | null;
+  duration?: string;
+  channel_name?: string;
+  created_at?: string;
+}
+
 interface PodcastCardProps {
-  podcast: Podcast;
-  onPlay: (podcast: Podcast) => void;
+  podcast: PodcastCardPodcast;
+  onPlay: (podcast: PodcastCardPodcast) => void;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -22,7 +33,7 @@ export function PodcastCard({ podcast, onPlay, className, style }: PodcastCardPr
       {/* 16:9 aspect ratio for full YouTube thumbnail */}
       <div className="relative aspect-video overflow-hidden rounded-t-xl">
         <img
-          src={podcast.thumbnail_url}
+          src={podcast.thumbnail_url || `https://img.youtube.com/vi/${podcast.youtube_id}/maxresdefault.jpg`}
           alt={podcast.title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
@@ -38,19 +49,17 @@ export function PodcastCard({ podcast, onPlay, className, style }: PodcastCardPr
             <Play className="h-5 w-5 fill-current" />
           </Button>
         </div>
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-background/80 px-2 py-1 text-xs backdrop-blur-sm">
-          <Clock className="h-3 w-3" />
-          <span>{podcast.duration}</span>
-        </div>
       </div>
 
       <div className="p-3">
         <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight">
           {podcast.title}
         </h3>
-        <p className="line-clamp-2 text-xs text-muted-foreground">
-          {podcast.description}
-        </p>
+        {podcast.description && (
+          <p className="line-clamp-2 text-xs text-muted-foreground">
+            {podcast.description}
+          </p>
+        )}
       </div>
     </div>
   );
