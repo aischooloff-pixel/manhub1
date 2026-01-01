@@ -2714,6 +2714,11 @@ async function handleBroadcast(chatId: number, userId: number) {
 
 // Handle broadcast text input
 async function handleBroadcastTextInput(chatId: number, userId: number, text: string): Promise<boolean> {
+  // Skip if text is empty or undefined
+  if (!text || text.trim() === '') {
+    return false;
+  }
+
   const { data: pending } = await supabase
     .from('admin_settings')
     .select('value')
@@ -2731,10 +2736,12 @@ async function handleBroadcastTextInput(chatId: number, userId: number, text: st
 
   if (state.step !== 'text') return false;
 
+  console.log('Saving broadcast text:', text);
+
   // Save text and move to media step
   await supabase.from('admin_settings').upsert({
     key: `pending_broadcast_${userId}`,
-    value: JSON.stringify({ step: 'media', text: text }),
+    value: JSON.stringify({ step: 'media', text: text.trim() }),
   });
 
   const keyboard = {
@@ -2755,42 +2762,84 @@ async function handleBroadcastTextInput(chatId: number, userId: number, text: st
 
 // Handle broadcast media input
 async function handleBroadcastMediaInput(chatId: number, userId: number, message: any): Promise<boolean> {
+  console.log('handleBroadcastMediaInput called, userId:', userId);
+  
   const { data: pending } = await supabase
     .from('admin_settings')
     .select('value')
     .eq('key', `pending_broadcast_${userId}`)
     .maybeSingle();
 
-  if (!pending) return false;
+  if (!pending) {
+    console.log('No pending broadcast state found');
+    return false;
+  }
 
   let state;
   try {
     state = JSON.parse(pending.value || '{}');
   } catch {
+    console.log('Failed to parse state');
     return false;
   }
 
-  if (state.step !== 'media') return false;
+  console.log('Current broadcast state:', state);
+
+  if (state.step !== 'media') {
+    console.log('Step is not media, skipping. Current step:', state.step);
+    return false;
+  }
 
   let mediaId = '';
   let mediaType = '';
 
+  // Check for photo
   if (message.photo && message.photo.length > 0) {
-    // Get largest photo
     mediaId = message.photo[message.photo.length - 1].file_id;
     mediaType = 'photo';
-  } else if (message.video) {
+    console.log('Photo detected, file_id:', mediaId);
+  } 
+  // Check for video
+  else if (message.video) {
     mediaId = message.video.file_id;
     mediaType = 'video';
-  } else {
+    console.log('Video detected, file_id:', mediaId);
+  }
+  // Check for document (photo/video sent as file)
+  else if (message.document) {
+    const mimeType = message.document.mime_type || '';
+    if (mimeType.startsWith('image/')) {
+      mediaId = message.document.file_id;
+      mediaType = 'photo';
+      console.log('Document (image) detected, file_id:', mediaId);
+    } else if (mimeType.startsWith('video/')) {
+      mediaId = message.document.file_id;
+      mediaType = 'video';
+      console.log('Document (video) detected, file_id:', mediaId);
+    } else {
+      await sendAdminMessage(chatId, '❌ Пожалуйста, отправьте фото или видео (не документ другого типа)');
+      return true;
+    }
+  }
+  // Check for animation (GIF)
+  else if (message.animation) {
+    mediaId = message.animation.file_id;
+    mediaType = 'video';
+    console.log('Animation detected, file_id:', mediaId);
+  }
+  else {
+    console.log('No valid media found in message');
     await sendAdminMessage(chatId, '❌ Пожалуйста, отправьте фото или видео');
     return true;
   }
 
   // Save media and show preview
+  const newState = { ...state, step: 'preview', media_id: mediaId, media_type: mediaType };
+  console.log('Saving new state:', newState);
+  
   await supabase.from('admin_settings').upsert({
     key: `pending_broadcast_${userId}`,
-    value: JSON.stringify({ ...state, step: 'preview', media_id: mediaId, media_type: mediaType }),
+    value: JSON.stringify(newState),
   });
 
   await showBroadcastPreview(chatId, userId, state.text, mediaId, mediaType);
@@ -5155,7 +5204,9 @@ Deno.serve(async (req) => {
 
     // Handle messages
     if (update.message) {
-      const { chat, text, from, photo, video, animation } = update.message;
+      const { chat, from, photo, video, animation, document } = update.message;
+      // Get text from either text field or caption (for media messages)
+      const text = update.message.text || update.message.caption;
 
       // Check admin access
       if (!isAdmin(from.id)) {
@@ -5164,7 +5215,7 @@ Deno.serve(async (req) => {
       }
 
       // FIRST: Check if this is a media upload for /hi command or /broadcast
-      if (photo || video || animation) {
+      if (photo || video || animation || document) {
         // Check broadcast media first
         const broadcastMediaHandled = await handleBroadcastMediaInput(chat.id, from.id, update.message);
         if (broadcastMediaHandled) {
