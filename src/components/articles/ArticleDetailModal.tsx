@@ -349,13 +349,19 @@ export function ArticleDetailModal({
               <div className="mt-6 rounded-xl bg-secondary/50 p-4">
                 <h4 className="mb-2 text-sm font-medium">Источники:</h4>
                 <ul className="space-y-1">
-                  {article.sources.map((source, i) => (
-                    <li key={i} className="text-sm text-primary hover:underline">
-                      <a href={source} target="_blank" rel="noopener noreferrer">
-                        {source}
-                      </a>
-                    </li>
-                  ))}
+                  {article.sources.map((source, i) => {
+                    // Ensure URL has proper protocol
+                    const url = source.startsWith('http://') || source.startsWith('https://') 
+                      ? source 
+                      : `https://${source}`;
+                    return (
+                      <li key={i} className="text-sm text-primary hover:underline">
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          {source}
+                        </a>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}

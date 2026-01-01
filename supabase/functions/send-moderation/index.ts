@@ -154,6 +154,12 @@ Deno.serve(async (req) => {
       `\n📝 <b>Заголовок:</b> ${safe(article.title)}` +
       `\n🙈 <b>Анонимная публикация:</b> ${article.is_anonymous ? 'Да' : 'Нет'}`;
 
+    // Sources section
+    const sourcesArr = article.sources as string[] | null;
+    const sourcesLine = sourcesArr && sourcesArr.length > 0
+      ? `\n\n🔗 <b>Источники:</b>\n${sourcesArr.map((s: string, i: number) => `${i + 1}. ${safe(s)}`).join('\n')}`
+      : '';
+
     const mediaLine =
       article.media_url
         ? isBase64Image
@@ -165,7 +171,7 @@ Deno.serve(async (req) => {
 
     const body = `\n\n📄 <b>Текст:</b>\n${safe(article.body || '')}`;
 
-    const message = `${header}${authorLine}\n${idsLine}${meta}${body}${mediaLine}`;
+    const message = `${header}${authorLine}\n${idsLine}${meta}${body}${sourcesLine}${mediaLine}`;
 
     const keyboard = {
       inline_keyboard: [[{ text: '✅ Принять', callback_data: `approve:${shortId}` }, { text: '❌ Отклонить', callback_data: `reject:${shortId}` }]],
