@@ -193,7 +193,7 @@ export function ProfileModal({ user: defaultUser, isOpen, onClose }: ProfileModa
       </div>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} />
+      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} telegramId={tgUser?.id} />
     </>
   );
 }

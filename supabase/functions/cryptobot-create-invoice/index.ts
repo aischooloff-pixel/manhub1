@@ -78,27 +78,33 @@ serve(async (req) => {
       });
     }
 
-    const { initData, plan, period, amount, currency = 'RUB' } = await req.json();
+    const { initData, telegram_id: providedTelegramId, plan, period, amount, currency = 'RUB' } = await req.json();
 
-    // Verify Telegram Web App data
-    if (!initData || !telegramBotToken) {
-      console.error('Missing initData or bot token');
-      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+    let telegramId: number | null = null;
+
+    // First try to verify via initData (most secure)
+    if (initData && telegramBotToken) {
+      const verification = await verifyTelegramWebAppData(initData, telegramBotToken);
+      if (verification.valid && verification.user) {
+        telegramId = verification.user.id;
+        console.log(`User verified via initData: ${telegramId}`);
+      }
+    }
+
+    // Fallback to provided telegram_id (for cases when user is in browser but has valid profile)
+    if (!telegramId && providedTelegramId) {
+      telegramId = providedTelegramId;
+      console.log(`Using provided telegram_id: ${telegramId}`);
+    }
+
+    if (!telegramId) {
+      console.error('No valid user identification');
+      return new Response(JSON.stringify({ error: 'User identification required' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const verification = await verifyTelegramWebAppData(initData, telegramBotToken);
-    if (!verification.valid || !verification.user) {
-      console.error('Invalid Telegram Web App data');
-      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const telegramId = verification.user.id;
     console.log(`Creating invoice for user ${telegramId}, plan: ${plan}, period: ${period}, amount: ${amount} ${currency}`);
 
     // Create invoice via CryptoBot API
@@ -113,7 +119,7 @@ serve(async (req) => {
         period,
       }),
       paid_btn_name: 'callback',
-      paid_btn_url: 'https://t.me/schooloff_bot/app', // Replace with your bot's webapp URL
+      paid_btn_url: 'https://t.me/schooloff_bot/app',
       allow_comments: false,
       allow_anonymous: false,
     };

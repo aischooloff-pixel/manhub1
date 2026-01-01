@@ -14,6 +14,7 @@ import { useTelegram } from '@/hooks/use-telegram';
 interface PremiumModalProps {
   isOpen: boolean;
   onClose: () => void;
+  telegramId?: number | null;
 }
 
 interface PricingData {
@@ -32,7 +33,7 @@ interface PricingData {
   discount: number;
 }
 
-export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
+export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId }: PremiumModalProps) {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [currentSlide, setCurrentSlide] = useState(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -222,8 +223,10 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
     }
 
     const initData = getInitData();
-    if (!initData) {
-      toast.error('Откройте приложение через Telegram');
+    
+    // Need either initData or telegram_id from profile
+    if (!initData && !propTelegramId) {
+      toast.error('Не удалось определить пользователя');
       return;
     }
 
@@ -233,7 +236,8 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
       
       const { data, error } = await supabase.functions.invoke('cryptobot-create-invoice', {
         body: {
-          initData,
+          initData: initData || null,
+          telegram_id: propTelegramId,
           plan: selectedPlan,
           period: billingPeriod,
           amount: price,
@@ -247,12 +251,14 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
         return;
       }
 
-      if (data?.success && data?.mini_app_invoice_url) {
-        // Open CryptoBot payment in Telegram
-        if (webApp?.openTelegramLink) {
+      if (data?.success && data?.invoice_url) {
+        // Open CryptoBot payment - prefer mini_app_invoice_url in Telegram, otherwise bot_invoice_url
+        const paymentUrl = data.mini_app_invoice_url || data.invoice_url;
+        
+        if (webApp?.openTelegramLink && data.mini_app_invoice_url) {
           webApp.openTelegramLink(data.mini_app_invoice_url);
         } else {
-          window.open(data.invoice_url, '_blank');
+          window.open(paymentUrl, '_blank');
         }
         toast.success('Счёт создан! Перейдите к оплате');
       } else {

@@ -352,7 +352,7 @@ export default function Index() {
 
       <BottomNav />
       
-      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} />
+      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} telegramId={profile?.telegram_id} />
       
       <ArticleDetailModal
         isOpen={isArticleDetailOpen}

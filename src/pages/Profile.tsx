@@ -666,7 +666,7 @@ export default function Profile() {
       <BottomNav />
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} />
+      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} telegramId={profile?.telegram_id} />
       <UserArticlesModal
         isOpen={isArticlesOpen}
         onClose={() => setIsArticlesOpen(false)}

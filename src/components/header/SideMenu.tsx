@@ -187,7 +187,7 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps) {
       </div>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => handleModalClose(setIsSettingsOpen)} />
-      <PremiumModal isOpen={isPremiumOpen} onClose={() => handleModalClose(setIsPremiumOpen)} />
+      <PremiumModal isOpen={isPremiumOpen} onClose={() => handleModalClose(setIsPremiumOpen)} telegramId={profile?.telegram_id} />
     </>
   );
 }
