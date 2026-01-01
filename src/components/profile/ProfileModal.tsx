@@ -184,7 +184,7 @@ export function ProfileModal({ user: defaultUser, isOpen, onClose }: ProfileModa
               <div className="mt-6">
                 <Button className="w-full gap-2" size="lg" onClick={handlePremiumClick}>
                   <Crown className="h-4 w-4" />
-                  Перейти на Premium
+                  Перейти на Plus
                 </Button>
               </div>
             )}

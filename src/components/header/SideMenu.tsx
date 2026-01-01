@@ -73,7 +73,7 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps) {
     { icon: Bookmark, label: 'Избранное', path: undefined, onClick: handleFavoritesClick },
     { icon: User, label: 'Профиль', path: '/profile', onClick: undefined },
     // Show "Upgrade to Premium" for Plus users, hide for Premium
-    ...(isPlus ? [{ icon: Crown, label: 'Перейти на Premium', path: undefined, onClick: handlePremiumClick }] : []),
+    ...(isPlus ? [{ icon: Crown, label: 'Перейти на Plus', path: undefined, onClick: handlePremiumClick }] : []),
     // Show "Premium" for free users (leads to Plus first)
     ...(!isPaidUser ? [{ icon: Crown, label: 'Premium', path: undefined, onClick: handlePremiumClick }] : []),
     { icon: Settings, label: 'Настройки', path: undefined, onClick: handleSettingsClick },
@@ -179,7 +179,7 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps) {
             <div className="absolute bottom-4 left-4 right-4">
               <Button className="w-full gap-2" onClick={handlePremiumClick}>
                 <Crown className="h-4 w-4" />
-                Перейти на Premium
+                Перейти на Plus
               </Button>
             </div>
           )}
