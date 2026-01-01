@@ -8,6 +8,7 @@ export interface User {
   reputation: number;
   articles_count: number;
   is_premium: boolean;
+  subscription_tier?: string;
   created_at: string;
 }
 

@@ -32,6 +32,7 @@ interface Comment {
     username: string | null;
     avatar_url: string | null;
     is_premium: boolean | null;
+    subscription_tier: string | null;
   } | null;
 }
 
@@ -265,13 +266,13 @@ export function ArticleDetailModal({
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
+                    {(article.author.subscription_tier === 'plus' || article.author.subscription_tier === 'premium') && (
+                      <Crown className="h-4 w-4 text-yellow-500" />
+                    )}
                     <span className="font-medium">
                       {article.author.first_name} {article.author.last_name}
                     </span>
                     {article.author.id && <AuthorBadge userProfileId={article.author.id} />}
-                    {article.author.is_premium && (
-                      <Crown className="h-4 w-4 text-yellow-500" />
-                    )}
                   </div>
                   {article.author.username && (
                     <p className="text-sm text-muted-foreground">@{article.author.username}</p>
@@ -398,6 +399,9 @@ export function ArticleDetailModal({
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
+                            {(c.author?.subscription_tier === 'plus' || c.author?.subscription_tier === 'premium') && (
+                              <Crown className="h-3 w-3 text-yellow-500" />
+                            )}
                             <button
                               onClick={() => c.author?.id && onAuthorClick?.(c.author.id)}
                               className="text-sm font-medium hover:text-primary transition-colors"
@@ -406,9 +410,6 @@ export function ArticleDetailModal({
                               {c.author?.first_name || 'Пользователь'}
                             </button>
                             {c.author?.id && <AuthorBadge userProfileId={c.author.id} className="text-xs" />}
-                            {c.author?.is_premium && (
-                              <Crown className="h-3 w-3 text-yellow-500" />
-                            )}
                             <span className="text-xs text-muted-foreground">
                               {formatCommentDate(c.created_at)}
                             </span>
@@ -469,6 +470,9 @@ export function ArticleDetailModal({
                               </button>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
+                                  {(reply.author?.subscription_tier === 'plus' || reply.author?.subscription_tier === 'premium') && (
+                                    <Crown className="h-2.5 w-2.5 text-yellow-500" />
+                                  )}
                                   <button
                                     onClick={() => reply.author?.id && onAuthorClick?.(reply.author.id)}
                                     className="text-xs font-medium hover:text-primary transition-colors"
@@ -477,9 +481,6 @@ export function ArticleDetailModal({
                                     {reply.author?.first_name || 'Пользователь'}
                                   </button>
                                   {reply.author?.id && <AuthorBadge userProfileId={reply.author.id} className="text-[10px]" />}
-                                  {reply.author?.is_premium && (
-                                    <Crown className="h-2.5 w-2.5 text-yellow-500" />
-                                  )}
                                   <span className="text-[10px] text-muted-foreground">
                                     {formatCommentDate(reply.created_at)}
                                   </span>

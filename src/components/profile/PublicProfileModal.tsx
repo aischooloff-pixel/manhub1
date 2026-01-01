@@ -434,7 +434,8 @@ export function PublicProfileModal({ isOpen, onClose, authorId }: PublicProfileM
                     )}
                   </div>
 
-                  <h2 className="mb-1 font-heading text-xl font-semibold">
+                  <h2 className="mb-1 font-heading text-xl font-semibold flex items-center gap-2 justify-center">
+                    {isPremium && <Crown className="h-5 w-5 text-yellow-500" />}
                     {displayName}
                   </h2>
                   

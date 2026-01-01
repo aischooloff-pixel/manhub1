@@ -37,6 +37,7 @@ export interface Article {
     show_name?: boolean | null;
     show_username?: boolean | null;
     created_at?: string | null;
+    subscription_tier?: string | null;
   } | null;
 }
 
@@ -83,7 +84,7 @@ export function useArticles() {
         .from('articles')
         .select(`
           *,
-          author:author_id(id, first_name, last_name, username, avatar_url, is_premium, reputation, show_avatar, show_name, show_username, created_at)
+          author:author_id(id, first_name, last_name, username, avatar_url, is_premium, reputation, show_avatar, show_name, show_username, created_at, subscription_tier)
         `)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })

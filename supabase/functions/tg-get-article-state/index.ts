@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         body,
         created_at,
         parent_id,
-        author:author_id(id, first_name, last_name, username, avatar_url, is_premium)
+        author:author_id(id, first_name, last_name, username, avatar_url, is_premium, subscription_tier)
       `)
       .eq('article_id', articleId)
       .order('created_at', { ascending: true });

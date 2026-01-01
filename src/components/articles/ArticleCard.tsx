@@ -53,13 +53,13 @@ export function ArticleCard({ article, variant = 'default', className, style, on
                   alt={author.first_name}
                   className="h-6 w-6 rounded-full"
                 />
-                <span className="text-xs text-muted-foreground">
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  {(author.subscription_tier === 'plus' || author.subscription_tier === 'premium') && (
+                    <Crown className="h-3.5 w-3.5 text-yellow-500" />
+                  )}
                   {author.first_name}
                 </span>
                 {author.id && <AuthorBadge userProfileId={author.id} className="text-xs" />}
-                {author.is_premium && (
-                  <Crown className="h-4 w-4 text-yellow-500" />
-                )}
               </button>
             ) : (
               <span className="text-xs text-muted-foreground">Аноним</span>
@@ -171,11 +171,11 @@ export function ArticleCard({ article, variant = 'default', className, style, on
               />
               <div>
                 <span className="flex items-center gap-1.5 text-sm font-medium">
-                  {author.first_name} {author.last_name}
-                  {author.id && <AuthorBadge userProfileId={author.id} className="text-sm" />}
-                  {author.is_premium && (
+                  {(author.subscription_tier === 'plus' || author.subscription_tier === 'premium') && (
                     <Crown className="h-4 w-4 text-yellow-500" />
                   )}
+                  {author.first_name} {author.last_name}
+                  {author.id && <AuthorBadge userProfileId={author.id} className="text-sm" />}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   Rep: {author.reputation}
