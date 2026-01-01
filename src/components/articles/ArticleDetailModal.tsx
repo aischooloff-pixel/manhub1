@@ -7,6 +7,8 @@ import { Article } from '@/types';
 import { cn } from '@/lib/utils';
 import { useArticles } from '@/hooks/use-articles';
 import { supabase } from '@/integrations/supabase/client';
+import { AuthorBadge } from '@/components/profile/UserBadges';
+import { MentionText } from '@/components/ui/MentionText';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -183,6 +185,23 @@ export function ArticleDetailModal({
     setComment('');
   };
 
+  // Handle @mention click - resolve username to profile ID and open profile
+  const handleMentionClick = async (username: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('username', username)
+        .maybeSingle();
+      
+      if (profile && onAuthorClick) {
+        onAuthorClick(profile.id);
+      }
+    } catch (err) {
+      console.error('Error finding user by username:', err);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ru-RU', {
       day: 'numeric',
@@ -249,6 +268,7 @@ export function ArticleDetailModal({
                     <span className="font-medium">
                       {article.author.first_name} {article.author.last_name}
                     </span>
+                    {article.author.id && <AuthorBadge userProfileId={article.author.id} />}
                     {article.author.is_premium && (
                       <Crown className="h-4 w-4 text-yellow-500" />
                     )}
@@ -379,6 +399,7 @@ export function ArticleDetailModal({
                             >
                               {c.author?.first_name || 'Пользователь'}
                             </button>
+                            {c.author?.id && <AuthorBadge userProfileId={c.author.id} className="text-xs" />}
                             {c.author?.is_premium && (
                               <Crown className="h-3 w-3 text-yellow-500" />
                             )}
@@ -386,7 +407,11 @@ export function ArticleDetailModal({
                               {formatCommentDate(c.created_at)}
                             </span>
                           </div>
-                          <p className="text-sm text-foreground mt-0.5">{c.body}</p>
+                          <MentionText 
+                            text={c.body} 
+                            onMentionClick={handleMentionClick}
+                            className="text-sm text-foreground mt-0.5"
+                          />
                           
                           {/* Reply button and replies toggle */}
                           <div className="flex items-center gap-3 mt-2">
@@ -445,6 +470,7 @@ export function ArticleDetailModal({
                                   >
                                     {reply.author?.first_name || 'Пользователь'}
                                   </button>
+                                  {reply.author?.id && <AuthorBadge userProfileId={reply.author.id} className="text-[10px]" />}
                                   {reply.author?.is_premium && (
                                     <Crown className="h-2.5 w-2.5 text-yellow-500" />
                                   )}
@@ -452,7 +478,11 @@ export function ArticleDetailModal({
                                     {formatCommentDate(reply.created_at)}
                                   </span>
                                 </div>
-                                <p className="text-xs text-foreground mt-0.5">{reply.body}</p>
+                                <MentionText 
+                                  text={reply.body} 
+                                  onMentionClick={handleMentionClick}
+                                  className="text-xs text-foreground mt-0.5"
+                                />
                               </div>
                             </div>
                           ))}

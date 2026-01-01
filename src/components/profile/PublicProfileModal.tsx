@@ -12,6 +12,7 @@ import { useTelegram } from '@/hooks/use-telegram';
 import { toast } from 'sonner';
 import { Loader2, Send, CheckCircle } from 'lucide-react';
 import { PodcastPlayerModal } from '@/components/podcasts/PodcastPlayerModal';
+import { UserBadges } from '@/components/profile/UserBadges';
 import type { Article } from '@/types';
 
 interface ReputationHistoryEntry {
@@ -438,8 +439,13 @@ export function PublicProfileModal({ isOpen, onClose, authorId }: PublicProfileM
                   </h2>
                   
                   {displayUsername && (
-                    <p className="mb-3 text-sm text-muted-foreground">@{displayUsername}</p>
+                    <p className="mb-2 text-sm text-muted-foreground">@{displayUsername}</p>
                   )}
+
+                  {/* Badges */}
+                  <div className="mb-3">
+                    <UserBadges userProfileId={profile.id} variant="inline" />
+                  </div>
 
                   {/* Bio */}
                   {isPremium && profile.bio && (
