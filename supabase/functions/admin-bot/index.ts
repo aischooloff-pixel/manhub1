@@ -899,6 +899,7 @@ async function handlePremiumGrant(callbackQuery: any, telegramId: string) {
   const { error } = await supabase
     .from('profiles')
     .update({ 
+      subscription_tier: 'premium',
       is_premium: true,
       premium_expires_at: expiresAt.toISOString(),
       updated_at: new Date().toISOString()
@@ -956,6 +957,7 @@ async function handlePremiumRevoke(callbackQuery: any, telegramId: string) {
   const { error } = await supabase
     .from('profiles')
     .update({ 
+      subscription_tier: 'free',
       is_premium: false,
       premium_expires_at: null,
       updated_at: new Date().toISOString()
@@ -1011,6 +1013,7 @@ async function handlePremiumExtend(callbackQuery: any, telegramId: string, days:
   const { error } = await supabase
     .from('profiles')
     .update({ 
+      subscription_tier: 'premium',
       is_premium: true,
       premium_expires_at: newExpiry.toISOString(),
       updated_at: new Date().toISOString()
@@ -1083,6 +1086,7 @@ async function handleExtendCommand(chatId: number, userId: number, args: string)
   const { error } = await supabase
     .from('profiles')
     .update({ 
+      subscription_tier: 'premium',
       is_premium: true,
       premium_expires_at: newExpiry.toISOString(),
       updated_at: new Date().toISOString()
@@ -1825,6 +1829,7 @@ async function handleBlockUser(callbackQuery: any, telegramId: string) {
       is_blocked: true,
       blocked_at: new Date().toISOString(),
       blocked_until: null, // permanent block
+      subscription_tier: 'free',
       is_premium: false,
       premium_expires_at: null,
       updated_at: new Date().toISOString()
