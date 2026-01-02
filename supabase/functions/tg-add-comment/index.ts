@@ -75,6 +75,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Block links in comments
+    const linkRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.(com|ru|org|net|io|me|co|info|biz|xyz|app|dev|pro|cc|tk|ml|ga|cf|gq|link|site|online|store|shop|club|top|vip|live|tv|su|ua|by|kz|de|uk|fr|es|it|nl|pl|cz|pt|br|ar|mx|cn|jp|kr|in|au|ca|us)[^\s]*)/gi;
+    
+    if (linkRegex.test(body)) {
+      return new Response(JSON.stringify({ error: 'Ссылки в комментариях запрещены' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { user: tgUser } = await verifyTelegramInitData(initData);
     if (!tgUser) {
       return new Response(JSON.stringify({ error: 'Неверные данные авторизации' }), {
