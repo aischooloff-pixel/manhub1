@@ -208,18 +208,10 @@ export default function Profile() {
     }
   };
 
-  // Display values respecting privacy settings
-  const displayName = profile?.show_name !== false 
-    ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Пользователь'
-    : 'Аноним';
-  
-  const displayUsername = profile?.show_username !== false 
-    ? profile?.username || 'user'
-    : 'скрыт';
-  
-  const displayAvatar = profile?.show_avatar !== false
-    ? profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || profile?.first_name}`
-    : `https://api.dicebear.com/7.x/shapes/svg?seed=${profile?.id}`;
+  // Display values - always show real user data
+  const displayName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Пользователь';
+  const displayUsername = profile?.username || 'user';
+  const displayAvatar = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || profile?.first_name}`;
 
   if (profileLoading) {
     return (

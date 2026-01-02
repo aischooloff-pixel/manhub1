@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { initData, show_avatar, show_name, show_username, telegram_channel, website, bio } = body;
+    const { initData, telegram_channel, website, bio } = body;
     
     if (!initData) {
       return new Response(JSON.stringify({ error: 'initData is required' }), {
@@ -142,10 +142,7 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    // Privacy settings
-    if (typeof show_avatar === 'boolean') updatePayload.show_avatar = show_avatar;
-    if (typeof show_name === 'boolean') updatePayload.show_name = show_name;
-    if (typeof show_username === 'boolean') updatePayload.show_username = show_username;
+    // Social links (for premium users)
 
     // Social links (for premium users)
     if (telegram_channel !== undefined) updatePayload.telegram_channel = telegram_channel;

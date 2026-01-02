@@ -29,14 +29,9 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps) {
 
   if (!isOpen) return null;
 
-  const displayName = profile?.show_name !== false ? profile?.first_name || 'Пользователь' : 'Аноним';
-  const displayUsername =
-    profile?.show_username !== false ? profile?.username || 'user' : profile ? 'скрыт' : 'гость';
-
-  const displayAvatar =
-    profile?.show_avatar !== false
-      ? profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || profile?.first_name || 'user'}`
-      : `https://api.dicebear.com/7.x/shapes/svg?seed=${profile?.id || 'guest'}`;
+  const displayName = profile?.first_name || 'Пользователь';
+  const displayUsername = profile?.username || (profile ? 'user' : 'гость');
+  const displayAvatar = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || profile?.first_name || 'user'}`;
 
   const subscriptionTier = profile?.subscription_tier || 'free';
   const isPremium = subscriptionTier === 'premium';

@@ -24,9 +24,6 @@ interface ReputationHistoryEntry {
     first_name: string | null;
     username: string | null;
     avatar_url: string | null;
-    show_name: boolean;
-    show_username: boolean;
-    show_avatar: boolean;
     subscription_tier: string;
   } | null;
 }
@@ -40,9 +37,6 @@ interface PublicProfile {
   avatar_url: string | null;
   reputation: number;
   subscription_tier: string;
-  show_avatar: boolean;
-  show_name: boolean;
-  show_username: boolean;
   bio: string | null;
   telegram_channel: string | null;
   website: string | null;
@@ -301,8 +295,7 @@ export function PublicProfileModal({ isOpen, onClose, authorId }: PublicProfileM
           *,
           author:profiles!articles_author_id_fkey(
             id, first_name, last_name, username, avatar_url, 
-            is_premium, reputation, created_at, subscription_tier,
-            show_avatar, show_name, show_username
+            is_premium, reputation, created_at, subscription_tier
           )
         `)
         .eq('author_id', authorId)
@@ -330,12 +323,10 @@ export function PublicProfileModal({ isOpen, onClose, authorId }: PublicProfileM
 
   const isPremium = profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'plus';
   
-  // Apply privacy settings - respect user's choices
-  const displayName = profile?.show_name === true
-    ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Пользователь'
-    : 'Пользователь';
-  const displayUsername = profile?.show_username === true ? profile?.username : null;
-  const displayAvatar = profile?.show_avatar === true ? profile?.avatar_url : null;
+  // Always show real user data
+  const displayName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Пользователь';
+  const displayUsername = profile?.username;
+  const displayAvatar = profile?.avatar_url;
 
   const formatTelegramLink = (link: string | null) => {
     if (!link) return null;
@@ -771,12 +762,8 @@ export function PublicProfileModal({ isOpen, onClose, authorId }: PublicProfileM
               <div className="space-y-3">
                 {reputationHistory.map((entry) => {
                   const fromUser = entry.from_user;
-                  const displayName = fromUser?.show_name !== false 
-                    ? fromUser?.first_name || 'Пользователь'
-                    : fromUser?.show_username !== false && fromUser?.username 
-                      ? `@${fromUser.username}` 
-                      : 'Пользователь';
-                  const displayAvatar = fromUser?.show_avatar !== false ? fromUser?.avatar_url : null;
+                  const displayName = fromUser?.first_name || 'Пользователь';
+                  const displayAvatar = fromUser?.avatar_url;
                   
                   return (
                     <div 

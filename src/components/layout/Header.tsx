@@ -52,22 +52,17 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Display values respecting privacy settings
-  const displayName = profile?.show_name !== false
-    ? profile?.first_name || 'Пользователь'
-    : 'Аноним';
-
-  const displayAvatar = profile?.show_avatar !== false
-    ? profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || profile?.first_name}`
-    : `https://api.dicebear.com/7.x/shapes/svg?seed=${profile?.id}`;
+  // Display values - always show real user data
+  const displayName = profile?.first_name || 'Пользователь';
+  const displayAvatar = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username || profile?.first_name}`;
 
   // Build currentUser for ProfileModal
   const currentUser = {
     id: profile?.id || '',
     telegram_id: profile?.telegram_id || 0,
-    username: profile?.show_username !== false ? profile?.username || 'user' : 'скрыт',
-    first_name: profile?.show_name !== false ? profile?.first_name || 'Пользователь' : 'Аноним',
-    last_name: profile?.show_name !== false ? profile?.last_name || '' : '',
+    username: profile?.username || 'user',
+    first_name: profile?.first_name || 'Пользователь',
+    last_name: profile?.last_name || '',
     avatar_url: displayAvatar,
     reputation: profile?.reputation || 0,
     articles_count: 0,

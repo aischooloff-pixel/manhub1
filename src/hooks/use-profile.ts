@@ -18,9 +18,6 @@ export interface Profile {
   telegram_channel: string | null;
   website: string | null;
   created_at: string | null;
-  show_avatar: boolean;
-  show_name: boolean;
-  show_username: boolean;
   subscription_tier: SubscriptionTier;
   bio: string | null;
   referral_code: string | null;
@@ -109,9 +106,6 @@ export function useProfile() {
           is_premium: data.profile.is_premium || false,
           is_blocked: data.profile.is_blocked || false,
           blocked_until: data.profile.blocked_until || null,
-          show_avatar: data.profile.show_avatar ?? true,
-          show_name: data.profile.show_name ?? true,
-          show_username: data.profile.show_username ?? true,
           subscription_tier: data.profile.subscription_tier || 'free',
           bio: data.profile.bio || null,
           referral_code: data.profile.referral_code || null,
@@ -175,37 +169,13 @@ export function useProfile() {
     }
   }, [getInitData, profile]);
 
-  // Update privacy settings
+  // Update social links only (privacy removed)
   const updatePrivacy = useCallback(
-    async (settings: { show_avatar?: boolean; show_name?: boolean; show_username?: boolean }) => {
-      const initData = getInitData();
-      if (!initData || !profile) return false;
-
-      try {
-        const { data, error: fnError } = await supabase.functions.invoke('tg-update-privacy', {
-          body: { initData, ...settings },
-        });
-
-        if (fnError) {
-          const msg = await extractEdgeErrorMessage(fnError);
-          throw new Error(msg);
-        }
-
-        if (data?.profile) {
-          setProfile({
-            ...profile,
-            show_avatar: data.profile.show_avatar ?? true,
-            show_name: data.profile.show_name ?? true,
-            show_username: data.profile.show_username ?? true,
-          });
-        }
-        return true;
-      } catch (err) {
-        console.error('Error updating privacy:', err);
-        return false;
-      }
+    async (_settings: { show_avatar?: boolean; show_name?: boolean; show_username?: boolean }) => {
+      // Privacy settings removed - this function is kept for API compatibility
+      return true;
     },
-    [getInitData, profile]
+    []
   );
 
   useEffect(() => {
