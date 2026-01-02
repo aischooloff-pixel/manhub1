@@ -323,7 +323,7 @@ async function handleUsers(chatId: number, userId: number, page: number = 0, mes
   // Get users for current page
   const { data: users, error } = await supabase
     .from('profiles')
-    .select('id, telegram_id, username, first_name, last_name, is_premium, is_blocked, reputation, created_at')
+    .select('id, telegram_id, username, first_name, last_name, subscription_tier, is_blocked, reputation, created_at')
     .order('created_at', { ascending: false })
     .range(from, from + USERS_PER_PAGE - 1);
 
@@ -342,9 +342,10 @@ async function handleUsers(chatId: number, userId: number, page: number = 0, mes
     message += '<i>Пользователей нет</i>';
   } else {
     for (const user of users) {
-      const premium = user.is_premium ? '👑' : '';
+      const isPaidUser = user.subscription_tier === 'plus' || user.subscription_tier === 'premium';
+      const premium = isPaidUser ? '👑' : '';
       const blocked = user.is_blocked ? '🚫' : '';
-      const username = user.username ? `@${user.username}` : `ID:${user.telegram_id}`;
+      const username = user.username ? `@${escapeHtml(user.username)}` : `ID:${user.telegram_id}`;
       message += `${premium}${blocked} <b>${username}</b>\n`;
       message += `   🆔 ${user.telegram_id || 'N/A'} | ⭐ ${user.reputation || 0}\n`;
     }
@@ -2193,7 +2194,9 @@ async function handleArticles(chatId: number, userId: number, page: number = 0, 
   if (articles) {
     for (const article of articles) {
       const shortId = await getOrCreateShortId(article.id);
-      const shortTitle = article.title.length > 25 ? article.title.substring(0, 25) + '...' : article.title;
+      // Escape and truncate title for button text (Telegram limits button text)
+      const rawTitle = article.title.substring(0, 25);
+      const shortTitle = rawTitle.replace(/[<>]/g, '') + (article.title.length > 25 ? '...' : '');
       articleButtons.push([{ text: `📄 ${shortTitle}`, callback_data: `article:${shortId}` }]);
     }
   }
