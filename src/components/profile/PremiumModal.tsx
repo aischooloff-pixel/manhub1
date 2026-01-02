@@ -15,6 +15,7 @@ interface PremiumModalProps {
   isOpen: boolean;
   onClose: () => void;
   telegramId?: number | null;
+  currentTier?: string;
 }
 
 interface PricingData {
@@ -33,7 +34,7 @@ interface PricingData {
   discount: number;
 }
 
-export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId }: PremiumModalProps) {
+export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, currentTier = 'free' }: PremiumModalProps) {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [currentSlide, setCurrentSlide] = useState(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -543,10 +544,10 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId }: Pr
                   <Button
                     onClick={() => handleSelectPlan(plan.id)}
                     className="w-full"
-                    variant={plan.id === 'free' ? 'secondary' : 'default'}
-                    disabled={plan.id === 'free' || plan.id === 'premium'}
+                    variant={plan.id === currentTier || plan.id === 'free' ? 'secondary' : 'default'}
+                    disabled={plan.id === 'free' || plan.id === 'premium' || plan.id === currentTier}
                   >
-                    {plan.id === 'free' ? 'Текущий план' : plan.id === 'plus' ? 'Выбрать' : 'Скоро'}
+                    {plan.id === currentTier ? 'Выбрано' : plan.id === 'free' ? 'Текущий план' : plan.id === 'plus' ? 'Выбрать' : 'Скоро'}
                   </Button>
                 </div>
               </div>
@@ -615,10 +616,10 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId }: Pr
                     <Button
                       onClick={() => handleSelectPlan(plan.id)}
                       className="w-full"
-                      variant={plan.id === 'free' ? 'secondary' : 'default'}
-                      disabled={plan.id === 'free' || plan.id === 'premium'}
+                      variant={plan.id === currentTier || plan.id === 'free' ? 'secondary' : 'default'}
+                      disabled={plan.id === 'free' || plan.id === 'premium' || plan.id === currentTier}
                     >
-                      {plan.id === 'free' ? 'Текущий план' : plan.id === 'plus' ? 'Выбрать' : 'Скоро'}
+                      {plan.id === currentTier ? 'Выбрано' : plan.id === 'free' ? 'Текущий план' : plan.id === 'plus' ? 'Выбрать' : 'Скоро'}
                     </Button>
                   </div>
                 </div>

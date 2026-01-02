@@ -14,6 +14,7 @@ import { User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTelegram } from '@/hooks/use-telegram';
+import { useProfile } from '@/hooks/use-profile';
 import { SettingsModal } from './SettingsModal';
 import { PremiumModal } from './PremiumModal';
 
@@ -25,6 +26,7 @@ interface ProfileModalProps {
 
 export function ProfileModal({ user: defaultUser, isOpen, onClose }: ProfileModalProps) {
   const { user: tgUser } = useTelegram();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPremiumOpen, setIsPremiumOpen] = useState(false);
@@ -193,7 +195,7 @@ export function ProfileModal({ user: defaultUser, isOpen, onClose }: ProfileModa
       </div>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} telegramId={tgUser?.id} />
+      <PremiumModal isOpen={isPremiumOpen} onClose={() => setIsPremiumOpen(false)} telegramId={tgUser?.id} currentTier={profile?.subscription_tier} />
     </>
   );
 }
