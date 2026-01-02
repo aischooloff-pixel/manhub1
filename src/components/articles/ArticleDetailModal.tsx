@@ -204,7 +204,10 @@ export function ArticleDetailModal({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ru-RU', {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('ru-RU', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -290,10 +293,12 @@ export function ArticleDetailModal({
                   <FileText className="h-3.5 w-3.5" />
                   <span>{authorArticlesCount} статей</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>С {formatDate(article.author.created_at)}</span>
-                </div>
+                {article.author.created_at && formatDate(article.author.created_at) && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>С {formatDate(article.author.created_at)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}

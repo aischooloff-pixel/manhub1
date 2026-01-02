@@ -146,7 +146,7 @@ export default function Index() {
         reputation: author.reputation || 0,
         articles_count: 0,
         is_premium: author.is_premium || false,
-        created_at: '',
+        created_at: author.created_at || '',
         subscription_tier: author.subscription_tier || undefined,
       };
     }
@@ -162,7 +162,7 @@ export default function Index() {
       reputation: author.reputation || 0,
       articles_count: 0,
       is_premium: author.is_premium || false,
-      created_at: '',
+      created_at: author.created_at || '',
       subscription_tier: author.subscription_tier || undefined,
     };
   };
