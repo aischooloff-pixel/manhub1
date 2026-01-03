@@ -108,7 +108,7 @@ export function ReferralModal({ isOpen, onClose, referralCode }: ReferralModalPr
         <div className="p-6">
           <h2 className="font-heading text-xl font-semibold mb-2">Реферальная система</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Приглашай друзей и получай 50% от их покупок
+            Приглашай друзей и получай 30% от их покупок
           </p>
 
           {/* Stats Cards */}

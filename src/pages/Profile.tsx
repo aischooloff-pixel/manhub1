@@ -619,7 +619,7 @@ export default function Profile() {
               </div>
               <div className="flex-1">
                 <h3 className="font-heading text-base font-semibold">Реферальная система</h3>
-                <p className="text-xs text-muted-foreground">Получай 50% от покупок приглашённых</p>
+                <p className="text-xs text-muted-foreground">Получай 30% от покупок приглашённых</p>
               </div>
             </div>
             <Button 
