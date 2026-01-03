@@ -800,6 +800,27 @@ CREATE TABLE public.articles (
 
 
 --
+-- Name: manual_payment_requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manual_payment_requests (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_profile_id uuid NOT NULL,
+    plan text NOT NULL,
+    billing_period text NOT NULL,
+    amount integer NOT NULL,
+    receipt_url text NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    rejection_reason text,
+    admin_message_id bigint,
+    reviewed_by_telegram_id bigint,
+    reviewed_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: moderation_logs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1257,6 +1278,14 @@ ALTER TABLE ONLY public.article_views
 
 ALTER TABLE ONLY public.articles
     ADD CONSTRAINT articles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manual_payment_requests manual_payment_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_payment_requests
+    ADD CONSTRAINT manual_payment_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -1851,6 +1880,14 @@ ALTER TABLE ONLY public.articles
 
 
 --
+-- Name: manual_payment_requests manual_payment_requests_user_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manual_payment_requests
+    ADD CONSTRAINT manual_payment_requests_user_profile_id_fkey FOREIGN KEY (user_profile_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+
+
+--
 -- Name: moderation_logs moderation_logs_article_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2203,6 +2240,13 @@ CREATE POLICY "Service role can manage notifications" ON public.notifications US
 
 
 --
+-- Name: manual_payment_requests Service role can manage payment requests; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Service role can manage payment requests" ON public.manual_payment_requests USING (true) WITH CHECK (true);
+
+
+--
 -- Name: playlists Service role can manage playlists; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2350,6 +2394,15 @@ CREATE POLICY "Users can view only their own notifications" ON public.notificati
 
 
 --
+-- Name: manual_payment_requests Users can view own payment requests; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view own payment requests" ON public.manual_payment_requests FOR SELECT USING ((user_profile_id IN ( SELECT profiles.id
+   FROM public.profiles
+  WHERE (profiles.telegram_id IS NOT NULL))));
+
+
+--
 -- Name: referral_earnings Users can view own referral earnings; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2431,6 +2484,12 @@ ALTER TABLE public.article_views ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: manual_payment_requests; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.manual_payment_requests ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: moderation_logs; Type: ROW SECURITY; Schema: public; Owner: -
