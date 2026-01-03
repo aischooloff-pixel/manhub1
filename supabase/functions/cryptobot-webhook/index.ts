@@ -223,7 +223,17 @@ serve(async (req) => {
     // Handle referral earnings if user was referred
     if (profile.referred_by) {
       const amount = parseFloat(invoice.amount);
-      const earningAmount = amount * 0.2; // 20% referral bonus
+      
+      // Check if referrer has partner role (50%), otherwise 30%
+      const { data: partnerRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', profile.referred_by)
+        .eq('role', 'partner')
+        .maybeSingle();
+      
+      const referralPercent = partnerRole ? 0.5 : 0.3;
+      const earningAmount = amount * referralPercent;
 
       await supabase.from('referral_earnings').insert({
         referrer_id: profile.referred_by,

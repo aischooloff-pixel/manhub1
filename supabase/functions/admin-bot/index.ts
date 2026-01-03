@@ -4823,7 +4823,7 @@ async function handleManualPaymentApprove(callbackQuery: any, paymentId: string)
   // Get payment request
   const { data: payment, error: paymentError } = await supabase
     .from('manual_payment_requests')
-    .select('*, profile:user_profile_id(telegram_id, username, first_name)')
+    .select('*, profile:user_profile_id(id, telegram_id, username, first_name, referred_by)')
     .eq('id', paymentId)
     .maybeSingle();
 
@@ -4856,6 +4856,56 @@ async function handleManualPaymentApprove(callbackQuery: any, paymentId: string)
     console.error('Error updating subscription:', updateError);
     await answerCallbackQuery(id, '❌ Ошибка при выдаче подписки');
     return;
+  }
+
+  // Handle referral earnings (30% default, 50% for partners)
+  if (profile?.referred_by) {
+    const amount = payment.amount;
+    
+    // Check if referrer has partner role
+    const { data: partnerRole } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', profile.referred_by)
+      .eq('role', 'partner')
+      .maybeSingle();
+    
+    const referralPercent = partnerRole ? 0.5 : 0.3;
+    const earningAmount = amount * referralPercent;
+    
+    // Record referral earning
+    await supabase.from('referral_earnings').insert({
+      referrer_id: profile.referred_by,
+      referred_id: profile.id,
+      purchase_amount: amount,
+      earning_amount: earningAmount,
+      purchase_type: `manual_${payment.plan}_${payment.billing_period}`,
+    });
+
+    // Update referrer's total earnings
+    const { data: referrer } = await supabase
+      .from('profiles')
+      .select('referral_earnings, telegram_id')
+      .eq('id', profile.referred_by)
+      .maybeSingle();
+
+    if (referrer) {
+      await supabase
+        .from('profiles')
+        .update({ 
+          referral_earnings: (referrer.referral_earnings || 0) + earningAmount 
+        })
+        .eq('id', profile.referred_by);
+
+      // Notify referrer
+      if (referrer.telegram_id) {
+        const percentText = partnerRole ? '50%' : '30%';
+        await sendUserMessage(
+          referrer.telegram_id,
+          `💰 <b>Реферальный доход!</b>\n\nВаш реферал оформил подписку ${payment.plan.toUpperCase()}.\n\n<b>Ваш доход (${percentText}):</b> ${earningAmount.toFixed(0)}₽`
+        );
+      }
+    }
   }
 
   // Update payment status
