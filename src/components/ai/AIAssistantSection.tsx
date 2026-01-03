@@ -24,7 +24,7 @@ export function AIAssistantSection({ className, subscriptionTier = 'free', teleg
     if (hasAccess) {
       setIsChatOpen(true);
     } else {
-      setIsUpgradeOpen(true);
+      setIsPremiumOpen(true);
     }
   };
 
