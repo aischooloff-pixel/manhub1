@@ -172,8 +172,8 @@ serve(async (req) => {
       });
     }
 
-    const { telegram_id, plan, period } = payloadData;
-    console.log(`Processing payment for user ${telegram_id}, plan: ${plan}, period: ${period}`);
+    const { telegram_id, plan, period, amount_rub } = payloadData;
+    console.log(`Processing payment for user ${telegram_id}, plan: ${plan}, period: ${period}, amount_rub: ${amount_rub}`);
 
     // Connect to Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -221,8 +221,9 @@ serve(async (req) => {
     }
 
     // Handle referral earnings if user was referred
-    if (profile.referred_by) {
-      const amount = parseFloat(invoice.amount);
+    if (profile.referred_by && amount_rub) {
+      // Use amount_rub from payload (the price in rubles set by admin)
+      const purchaseAmount = Number(amount_rub);
       
       // Check if referrer has partner role (50%), otherwise 30%
       const { data: partnerRole } = await supabase
@@ -233,20 +234,20 @@ serve(async (req) => {
         .maybeSingle();
       
       const referralPercent = partnerRole ? 0.5 : 0.3;
-      const earningAmount = amount * referralPercent;
+      const earningAmount = purchaseAmount * referralPercent;
 
       await supabase.from('referral_earnings').insert({
         referrer_id: profile.referred_by,
         referred_id: profile.id,
-        purchase_type: `${plan}_${period}`,
-        purchase_amount: amount,
+        purchase_type: `cryptobot_${plan}_${period}`,
+        purchase_amount: purchaseAmount,
         earning_amount: earningAmount,
       });
 
-      // Update referrer's total earnings
+      // Update referrer's total earnings and notify
       const { data: referrer } = await supabase
         .from('profiles')
-        .select('referral_earnings')
+        .select('referral_earnings, telegram_id')
         .eq('id', profile.referred_by)
         .single();
 
@@ -255,6 +256,15 @@ serve(async (req) => {
           .from('profiles')
           .update({ referral_earnings: (referrer.referral_earnings || 0) + earningAmount })
           .eq('id', profile.referred_by);
+        
+        // Notify referrer
+        if (referrer.telegram_id) {
+          const percentText = partnerRole ? '50%' : '30%';
+          await sendTelegramMessage(
+            referrer.telegram_id,
+            `💰 <b>Реферальный доход!</b>\n\nВаш реферал оформил подписку ${plan.toUpperCase()}.\n\n<b>Ваш доход (${percentText}):</b> ${earningAmount.toFixed(0)}₽`
+          );
+        }
       }
     }
 
