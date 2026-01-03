@@ -1420,10 +1420,17 @@ async function handleSetPrice(chatId: number, userId: number, args: string) {
 
   const column = period === 'monthly' ? 'monthly_price' : 'yearly_price';
   
+  // Use upsert to create record if it doesn't exist
   const { error } = await supabase
     .from('subscription_pricing')
-    .update({ [column]: price, updated_at: new Date().toISOString() })
-    .eq('tier', tier);
+    .upsert(
+      { 
+        tier, 
+        [column]: price, 
+        updated_at: new Date().toISOString() 
+      },
+      { onConflict: 'tier' }
+    );
 
   if (error) {
     console.error('Error setting price:', error);
@@ -1460,10 +1467,17 @@ async function handleSetOrigPrice(chatId: number, userId: number, args: string) 
 
   const column = period === 'monthly' ? 'monthly_original_price' : 'yearly_original_price';
   
+  // Use upsert to create record if it doesn't exist
   const { error } = await supabase
     .from('subscription_pricing')
-    .update({ [column]: price, updated_at: new Date().toISOString() })
-    .eq('tier', tier);
+    .upsert(
+      { 
+        tier, 
+        [column]: price, 
+        updated_at: new Date().toISOString() 
+      },
+      { onConflict: 'tier' }
+    );
 
   if (error) {
     await sendAdminMessage(chatId, '❌ Ошибка при обновлении цены');
