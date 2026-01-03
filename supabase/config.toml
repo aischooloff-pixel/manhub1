@@ -2,3 +2,102 @@ project_id = "srgrvxzhupfyltkspfyi"
 
 [functions.manual-payment]
 verify_jwt = false
+
+[functions.admin-bot]
+verify_jwt = false
+
+[functions.telegram-bot]
+verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
+
+[functions.cryptobot-create-invoice]
+verify_jwt = false
+
+[functions.cryptobot-webhook]
+verify_jwt = false
+
+[functions.search-articles]
+verify_jwt = false
+
+[functions.send-edit-moderation]
+verify_jwt = false
+
+[functions.send-moderation]
+verify_jwt = false
+
+[functions.send-welcome-notifications]
+verify_jwt = false
+
+[functions.stars-create-invoice]
+verify_jwt = false
+
+[functions.tg-add-comment]
+verify_jwt = false
+
+[functions.tg-add-view]
+verify_jwt = false
+
+[functions.tg-create-article]
+verify_jwt = false
+
+[functions.tg-delete-article]
+verify_jwt = false
+
+[functions.tg-get-article-state]
+verify_jwt = false
+
+[functions.tg-give-reputation]
+verify_jwt = false
+
+[functions.tg-manage-product]
+verify_jwt = false
+
+[functions.tg-my-activity]
+verify_jwt = false
+
+[functions.tg-my-articles]
+verify_jwt = false
+
+[functions.tg-my-reputation]
+verify_jwt = false
+
+[functions.tg-notifications]
+verify_jwt = false
+
+[functions.tg-referral-stats]
+verify_jwt = false
+
+[functions.tg-report-article]
+verify_jwt = false
+
+[functions.tg-report-user]
+verify_jwt = false
+
+[functions.tg-reviews]
+verify_jwt = false
+
+[functions.tg-support]
+verify_jwt = false
+
+[functions.tg-sync-profile]
+verify_jwt = false
+
+[functions.tg-toggle-favorite]
+verify_jwt = false
+
+[functions.tg-toggle-like]
+verify_jwt = false
+
+[functions.tg-update-article]
+verify_jwt = false
+
+[functions.tg-update-privacy]
+verify_jwt = false
+
+[functions.tg-upload-product-media]
+verify_jwt = false
+
+[functions.tg-user-reputation]
+verify_jwt = false
