@@ -182,25 +182,32 @@ export function ReferralModal({ isOpen, onClose, referralCode }: ReferralModalPr
             <div>
               <h3 className="text-sm font-medium mb-3">История начислений</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {stats.earnings.map((earning) => (
-                  <div
-                    key={earning.id}
-                    className="flex items-center justify-between rounded-lg bg-muted/50 p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{earning.referred_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {earning.purchase_type === 'plus' ? 'Plus' : 'Premium'} подписка
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(earning.created_at).toLocaleDateString('ru-RU')}
+                {stats.earnings.map((earning) => {
+                  // Parse purchase_type: "stars_plus_monthly", "cryptobot_premium_yearly", "manual_plus_monthly"
+                  const parts = earning.purchase_type.split('_');
+                  const plan = parts.includes('premium') ? 'Premium' : parts.includes('plus') ? 'Plus' : 'Подписка';
+                  const period = parts.includes('yearly') ? 'год' : 'месяц';
+                  
+                  return (
+                    <div
+                      key={earning.id}
+                      className="flex items-center justify-between rounded-lg bg-muted/50 p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">{earning.referred_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {plan} на {period}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(earning.created_at).toLocaleDateString('ru-RU')}
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-green-500">
+                        +{earning.earning_amount.toFixed(0)} ₽
                       </p>
                     </div>
-                    <p className="text-sm font-bold text-green-500">
-                      +{earning.earning_amount} ₽
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
