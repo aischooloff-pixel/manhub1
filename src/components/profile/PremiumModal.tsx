@@ -295,7 +295,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
     {
       id: 'sbp',
       name: 'СБП',
-      description: 'Система быстрых платежей',
+      description: 'Будет добавлена на днях',
       logo: sbpLogo,
       enabled: false,
     },
