@@ -22,6 +22,8 @@ export function useTelegram() {
       if (tg.initDataUnsafe?.user) {
         setUser(tg.initDataUnsafe.user);
       }
+      // Log start_param for debugging
+      console.log('[useTelegram] start_param:', tg.initDataUnsafe?.start_param);
     }
   }, []);
 

@@ -91,7 +91,12 @@ export function useProfile() {
       setError(null);
 
       // Get startParam from Telegram WebApp for referral handling
-      const startParam = webApp?.initDataUnsafe?.start_param || null;
+      // Try multiple sources to ensure we capture it
+      // @ts-ignore
+      const tgWebApp = window.Telegram?.WebApp;
+      const startParam = tgWebApp?.initDataUnsafe?.start_param || webApp?.initDataUnsafe?.start_param || null;
+      
+      console.log('[useProfile] syncProfile called with startParam:', startParam);
 
       const { data, error: fnError } = await supabase.functions.invoke('tg-sync-profile', {
         body: { initData, startParam },
