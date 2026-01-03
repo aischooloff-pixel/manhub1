@@ -361,10 +361,20 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       formData.append('amount', getCurrentPlanPrice().toString());
       formData.append('receipt', receiptFile);
 
-      const apiKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      console.log('Sending manual payment request:', {
+        url: `${supabaseUrl}/functions/v1/manual-payment`,
+        telegramId: propTelegramId,
+        plan: selectedPlan || 'plus',
+        billingPeriod,
+        amount: getCurrentPlanPrice(),
+        fileName: receiptFile.name,
+      });
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-payment`,
+        `${supabaseUrl}/functions/v1/manual-payment`,
         {
           method: 'POST',
           headers: {
@@ -375,12 +385,16 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
         }
       );
 
+      console.log('Manual payment response status:', response.status);
+
       let data: any = null;
+      const responseText = await response.text();
+      console.log('Manual payment response text:', responseText);
+      
       try {
-        data = await response.json();
+        data = JSON.parse(responseText);
       } catch {
-        const text = await response.text();
-        data = { error: text || 'Invalid response' };
+        data = { error: responseText || 'Invalid response' };
       }
 
       if (!response.ok) {
@@ -398,12 +412,13 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
           amount: getCurrentPlanPrice(),
           created_at: new Date().toISOString()
         });
+        toast.success('Заявка отправлена на проверку');
       } else {
         toast.error(data?.error || 'Ошибка отправки заявки');
       }
-    } catch (err) {
-      console.error('Manual payment error:', err);
-      toast.error('Произошла ошибка');
+    } catch (err: any) {
+      console.error('Manual payment exception:', err);
+      toast.error(err?.message || 'Произошла ошибка при отправке');
     } finally {
       setManualPaymentLoading(false);
     }
