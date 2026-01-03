@@ -538,9 +538,18 @@ async function handleSuccessfulPayment(message: any) {
 
     console.log(`Updated subscription for ${profile_id}: ${plan} until ${premiumExpiresAt.toISOString()}`);
 
-    // Handle referral earnings (10% of payment)
+    // Handle referral earnings (30% default, 50% for partners)
     if (profile.referred_by) {
-      const earningAmount = amount_rub * 0.1;
+      // Check if referrer has partner role
+      const { data: partnerRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', profile.referred_by)
+        .eq('role', 'partner')
+        .maybeSingle();
+      
+      const referralPercent = partnerRole ? 0.5 : 0.3;
+      const earningAmount = amount_rub * referralPercent;
       
       // Record referral earning
       await supabase.from('referral_earnings').insert({
@@ -552,7 +561,6 @@ async function handleSuccessfulPayment(message: any) {
       });
 
       // Update referrer's total earnings
-      await supabase.rpc('', {}).then(() => {});
       const { data: referrer } = await supabase
         .from('profiles')
         .select('referral_earnings, telegram_id')
@@ -569,9 +577,10 @@ async function handleSuccessfulPayment(message: any) {
 
         // Notify referrer
         if (referrer.telegram_id) {
+          const percentText = partnerRole ? '50%' : '30%';
           await sendTelegramMessage(
             referrer.telegram_id,
-            `💰 <b>Реферальный доход!</b>\n\nВаш реферал оформил подписку ${plan.toUpperCase()}.\n\n<b>Ваш доход:</b> ${earningAmount.toFixed(0)}₽`
+            `💰 <b>Реферальный доход!</b>\n\nВаш реферал оформил подписку ${plan.toUpperCase()}.\n\n<b>Ваш доход (${percentText}):</b> ${earningAmount.toFixed(0)}₽`
           );
         }
       }
