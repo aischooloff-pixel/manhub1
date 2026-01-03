@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { initData } = await req.json();
+    const { initData, startParam } = await req.json();
     if (!initData) {
       return new Response(JSON.stringify({ error: 'initData is required' }), {
         status: 400,
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
     }
 
     const { user: tgUser, debug } = await verifyTelegramInitData(initData);
-    console.log('[tg-sync-profile] verify result:', debug);
+    console.log('[tg-sync-profile] verify result:', debug, 'startParam:', startParam);
 
     if (!tgUser?.id) {
       return new Response(
@@ -140,6 +140,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Handle referral link: ref_CODE
+    let referrerId: string | null = null;
+    if (startParam?.startsWith('ref_')) {
+      const referralCode = startParam.substring(4); // Remove 'ref_' prefix
+      console.log('[tg-sync-profile] Processing referral code:', referralCode);
+      
+      // Find referrer by referral code
+      const { data: referrer } = await supabase
+        .from('profiles')
+        .select('id, telegram_id')
+        .eq('referral_code', referralCode)
+        .maybeSingle();
+      
+      if (referrer && referrer.telegram_id !== tgUser.id) {
+        referrerId = referrer.id;
+        console.log('[tg-sync-profile] Found referrer:', referrer.id);
+      } else {
+        console.log('[tg-sync-profile] Referral code not found or self-referral:', referralCode);
+      }
+    }
+
     // Upsert profile by telegram_id
     const { data: existing } = await supabase
       .from('profiles')
@@ -147,7 +168,7 @@ Deno.serve(async (req) => {
       .eq('telegram_id', tgUser.id)
       .maybeSingle();
 
-    const payload = {
+    const payload: any = {
       telegram_id: tgUser.id,
       username: tgUser.username || null,
       first_name: tgUser.first_name || 'User',
@@ -158,18 +179,40 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: profile, error } = existing
-      ? await supabase
-          .from('profiles')
-          .update(payload)
-          .eq('id', existing.id)
-          .select('*')
-          .single()
-      : await supabase
-          .from('profiles')
-          .insert({ ...payload, reputation: 0 })
-          .select('*')
-          .single();
+    let profile;
+    let error;
+
+    if (existing) {
+      // Update existing profile
+      // Set referrer only if not already set
+      if (!existing.referred_by && referrerId) {
+        payload.referred_by = referrerId;
+        console.log('[tg-sync-profile] Setting referred_by for existing user:', referrerId);
+      }
+      
+      const result = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', existing.id)
+        .select('*')
+        .single();
+      profile = result.data;
+      error = result.error;
+    } else {
+      // Create new profile with referrer
+      if (referrerId) {
+        payload.referred_by = referrerId;
+        console.log('[tg-sync-profile] Creating new profile with referrer:', referrerId);
+      }
+      
+      const result = await supabase
+        .from('profiles')
+        .insert({ ...payload, reputation: 0 })
+        .select('*')
+        .single();
+      profile = result.data;
+      error = result.error;
+    }
 
     if (error || !profile) throw error;
 
