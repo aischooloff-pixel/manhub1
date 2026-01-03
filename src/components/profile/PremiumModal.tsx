@@ -458,9 +458,9 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
                       </li>
                       <li className="bg-card rounded-lg p-3 text-center">
                         <code className="text-lg font-mono font-bold text-foreground select-all">
-                          2200 7009 4785 0965
+                          2200 7013 5342 5256
                         </code>
-                        <p className="text-xs text-muted-foreground mt-1">Сбербанк</p>
+                        <p className="text-xs text-muted-foreground mt-1">Т-Банк • Максим П.</p>
                       </li>
                       <li className="flex gap-2">
                         <span className="font-bold text-foreground">2.</span>
