@@ -342,12 +342,20 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
   };
 
   const handleManualPayment = async () => {
+    console.log('handleManualPayment called', { 
+      receiptFile: receiptFile?.name, 
+      propTelegramId, 
+      selectedPlan, 
+      billingPeriod 
+    });
+    
     if (!receiptFile) {
       toast.error('Загрузите чек об оплате');
       return;
     }
 
     if (!propTelegramId) {
+      console.error('propTelegramId is missing');
       toast.error('Не удалось определить пользователя');
       return;
     }
