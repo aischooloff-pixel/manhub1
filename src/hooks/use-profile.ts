@@ -90,8 +90,11 @@ export function useProfile() {
       setLoading(true);
       setError(null);
 
+      // Get startParam from Telegram WebApp for referral handling
+      const startParam = webApp?.initDataUnsafe?.start_param || null;
+
       const { data, error: fnError } = await supabase.functions.invoke('tg-sync-profile', {
-        body: { initData },
+        body: { initData, startParam },
       });
 
       if (fnError) {
