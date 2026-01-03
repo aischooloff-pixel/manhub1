@@ -361,13 +361,22 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       formData.append('amount', getCurrentPlanPrice().toString());
       formData.append('receipt', receiptFile);
 
-      const { data, error } = await supabase.functions.invoke('manual-payment', {
-        body: formData,
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-payment`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
 
-      if (error) {
-        console.error('Manual payment error:', error);
-        toast.error('Ошибка отправки заявки');
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Manual payment error:', data);
+        toast.error(data?.error || 'Ошибка отправки заявки');
         return;
       }
 
