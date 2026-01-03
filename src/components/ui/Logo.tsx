@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import mLogo from '@/assets/m-logo.png';
 
 interface LogoProps {
   className?: string;
@@ -7,20 +8,19 @@ interface LogoProps {
 
 export function Logo({ className, size = 'md' }: LogoProps) {
   const sizes = {
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-2xl',
+    sm: { container: 'h-6 w-6', text: 'text-lg' },
+    md: { container: 'h-8 w-8', text: 'text-xl' },
+    lg: { container: 'h-10 w-10', text: 'text-2xl' },
   };
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className="relative flex h-8 w-8 items-center justify-center">
-        <div className="absolute inset-0 rounded-lg bg-foreground" />
-        <span className="relative z-10 font-heading text-sm font-bold text-background">
-          M
-        </span>
-      </div>
-      <span className={cn('font-heading font-semibold tracking-tight', sizes[size])}>
+      <img 
+        src={mLogo} 
+        alt="ManHub Logo" 
+        className={cn('rounded-lg object-cover', sizes[size].container)}
+      />
+      <span className={cn('font-heading font-semibold tracking-tight', sizes[size].text)}>
         ManHub
       </span>
     </div>
