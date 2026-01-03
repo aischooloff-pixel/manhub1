@@ -169,6 +169,7 @@ serve(async (req) => {
         telegram_id: telegramId,
         plan,
         period,
+        amount_rub: amount, // Pass RUB amount for referral calculations
       }),
       paid_btn_name: 'callback',
       paid_btn_url: 'https://t.me/schooloff_bot/app',
