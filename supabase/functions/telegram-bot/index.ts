@@ -390,6 +390,221 @@ async function handleRejectionReason(chatId: number, userId: number, text: strin
   return true;
 }
 
+// Generate invite link for Plus community
+async function generateCommunityInviteLink(): Promise<string | null> {
+  try {
+    const COMMUNITY_BOT_TOKEN = Deno.env.get('COMMUNITY_BOT_TOKEN');
+    const COMMUNITY_CHAT_ID = Deno.env.get('COMMUNITY_CHAT_ID');
+    
+    if (!COMMUNITY_BOT_TOKEN || !COMMUNITY_CHAT_ID) {
+      console.log('Community bot credentials not configured');
+      return null;
+    }
+    
+    const response = await fetch(
+      `https://api.telegram.org/bot${COMMUNITY_BOT_TOKEN}/createChatInviteLink`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: COMMUNITY_CHAT_ID,
+          member_limit: 1,
+          expire_date: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
+        }),
+      }
+    );
+    
+    const result = await response.json();
+    if (result.ok && result.result?.invite_link) {
+      return result.result.invite_link;
+    }
+    console.error('Failed to create invite link:', result);
+    return null;
+  } catch (e) {
+    console.error('Error generating invite link:', e);
+    return null;
+  }
+}
+
+// Handle Telegram Stars pre_checkout_query - must respond within 10 seconds
+async function handlePreCheckoutQuery(preCheckoutQuery: any) {
+  const { id, from, invoice_payload } = preCheckoutQuery;
+  console.log('Handling pre_checkout_query:', { id, from: from.id, invoice_payload });
+
+  try {
+    // Parse payload to validate
+    const payload = JSON.parse(invoice_payload);
+    console.log('Payment payload:', payload);
+
+    // Validate that profile exists
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', payload.profile_id)
+      .maybeSingle();
+
+    if (!profile) {
+      // Reject payment - profile not found
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerPreCheckoutQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pre_checkout_query_id: id,
+          ok: false,
+          error_message: 'Профиль не найден. Пожалуйста, откройте приложение заново.',
+        }),
+      });
+      return;
+    }
+
+    // Accept payment
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerPreCheckoutQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pre_checkout_query_id: id,
+        ok: true,
+      }),
+    });
+
+    const result = await response.json();
+    console.log('answerPreCheckoutQuery result:', result);
+  } catch (e) {
+    console.error('Error handling pre_checkout_query:', e);
+    // Try to reject in case of error
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerPreCheckoutQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pre_checkout_query_id: id,
+        ok: false,
+        error_message: 'Ошибка обработки платежа. Попробуйте позже.',
+      }),
+    });
+  }
+}
+
+// Handle successful Telegram Stars payment
+async function handleSuccessfulPayment(message: any) {
+  const { from, successful_payment } = message;
+  const { invoice_payload, total_amount, telegram_payment_charge_id } = successful_payment;
+
+  console.log('Handling successful_payment:', {
+    from: from.id,
+    total_amount,
+    telegram_payment_charge_id,
+    invoice_payload,
+  });
+
+  try {
+    const payload = JSON.parse(invoice_payload);
+    const { profile_id, plan, period, amount_rub, stars } = payload;
+
+    // Calculate subscription end date
+    const now = new Date();
+    let premiumExpiresAt: Date;
+    if (period === 'yearly') {
+      premiumExpiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+    } else {
+      premiumExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Get current profile to check for referrer
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, referred_by, subscription_tier')
+      .eq('id', profile_id)
+      .maybeSingle();
+
+    if (!profile) {
+      console.error('Profile not found:', profile_id);
+      return;
+    }
+
+    // Update user subscription
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        subscription_tier: plan,
+        premium_expires_at: premiumExpiresAt.toISOString(),
+        is_premium: true,
+      })
+      .eq('id', profile_id);
+
+    if (updateError) {
+      console.error('Error updating subscription:', updateError);
+      return;
+    }
+
+    console.log(`Updated subscription for ${profile_id}: ${plan} until ${premiumExpiresAt.toISOString()}`);
+
+    // Handle referral earnings (10% of payment)
+    if (profile.referred_by) {
+      const earningAmount = amount_rub * 0.1;
+      
+      // Record referral earning
+      await supabase.from('referral_earnings').insert({
+        referrer_id: profile.referred_by,
+        referred_id: profile_id,
+        purchase_amount: amount_rub,
+        earning_amount: earningAmount,
+        purchase_type: `stars_${plan}_${period}`,
+      });
+
+      // Update referrer's total earnings
+      await supabase.rpc('', {}).then(() => {});
+      const { data: referrer } = await supabase
+        .from('profiles')
+        .select('referral_earnings, telegram_id')
+        .eq('id', profile.referred_by)
+        .maybeSingle();
+
+      if (referrer) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            referral_earnings: (referrer.referral_earnings || 0) + earningAmount 
+          })
+          .eq('id', profile.referred_by);
+
+        // Notify referrer
+        if (referrer.telegram_id) {
+          await sendTelegramMessage(
+            referrer.telegram_id,
+            `💰 <b>Реферальный доход!</b>\n\nВаш реферал оформил подписку ${plan.toUpperCase()}.\n\n<b>Ваш доход:</b> ${earningAmount.toFixed(0)}₽`
+          );
+        }
+      }
+    }
+
+    // Send success notification to user
+    await sendTelegramMessage(
+      from.id,
+      `✅ <b>Подписка ${plan.toUpperCase()} активирована!</b>\n\n` +
+      `⭐ Оплачено: ${total_amount} Stars\n` +
+      `📅 Действует до: ${premiumExpiresAt.toLocaleDateString('ru-RU')}\n\n` +
+      `Спасибо за поддержку ManHub! 🎉`
+    );
+
+    // For Plus plan, send community invite link
+    if (plan === 'plus') {
+      const inviteLink = await generateCommunityInviteLink();
+      if (inviteLink) {
+        await sendTelegramMessage(
+          from.id,
+          `🔐 <b>Добро пожаловать в закрытое сообщество Plus!</b>\n\n` +
+          `Ваша персональная ссылка для вступления:\n${inviteLink}\n\n` +
+          `⚠️ Ссылка действительна 7 дней и только для одного использования.`
+        );
+      }
+    }
+
+    console.log('Successfully processed Stars payment for:', from.id);
+  } catch (e) {
+    console.error('Error handling successful_payment:', e);
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -454,6 +669,18 @@ Deno.serve(async (req) => {
   try {
     const update = await req.json();
     console.log('Received Telegram update:', JSON.stringify(update));
+
+    // Handle pre_checkout_query (Telegram Stars payment confirmation)
+    if (update.pre_checkout_query) {
+      await handlePreCheckoutQuery(update.pre_checkout_query);
+      return new Response('OK', { headers: corsHeaders });
+    }
+
+    // Handle successful_payment (Telegram Stars payment completed)
+    if (update.message?.successful_payment) {
+      await handleSuccessfulPayment(update.message);
+      return new Response('OK', { headers: corsHeaders });
+    }
 
     // Handle callback queries (button presses)
     if (update.callback_query) {

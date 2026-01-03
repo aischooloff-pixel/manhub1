@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-edit-moderation]
 verify_jwt = false
+
+[functions.stars-create-invoice]
+verify_jwt = false

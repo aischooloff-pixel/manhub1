@@ -209,7 +209,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
   };
 
   const handlePayment = async (methodId: string) => {
-    if (methodId !== 'crypto') {
+    if (methodId !== 'crypto' && methodId !== 'stars') {
       toast.info('Этот способ оплаты скоро будет доступен');
       return;
     }
@@ -226,7 +226,10 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
     try {
       const price = getCurrentPlanPrice();
       
-      const { data, error } = await supabase.functions.invoke('cryptobot-create-invoice', {
+      // Choose function based on payment method
+      const functionName = methodId === 'stars' ? 'stars-create-invoice' : 'cryptobot-create-invoice';
+      
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: {
           initData: initData || null,
           telegram_id: propTelegramId,
@@ -244,15 +247,25 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       }
 
       if (data?.success && data?.invoice_url) {
-        // Open CryptoBot payment - prefer mini_app_invoice_url in Telegram, otherwise bot_invoice_url
-        const paymentUrl = data.mini_app_invoice_url || data.invoice_url;
-        
-        if (webApp?.openTelegramLink && data.mini_app_invoice_url) {
-          webApp.openTelegramLink(data.mini_app_invoice_url);
+        // For Stars, the invoice_url opens in Telegram directly
+        if (methodId === 'stars') {
+          if (webApp?.openTelegramLink) {
+            webApp.openTelegramLink(data.invoice_url);
+          } else {
+            window.open(data.invoice_url, '_blank');
+          }
+          toast.success(`Счёт создан на ${data.stars_amount} ⭐ Stars`);
         } else {
-          window.open(paymentUrl, '_blank');
+          // CryptoBot payment - prefer mini_app_invoice_url in Telegram
+          const paymentUrl = data.mini_app_invoice_url || data.invoice_url;
+          
+          if (webApp?.openTelegramLink && data.mini_app_invoice_url) {
+            webApp.openTelegramLink(data.mini_app_invoice_url);
+          } else {
+            window.open(paymentUrl, '_blank');
+          }
+          toast.success('Счёт создан! Перейдите к оплате');
         }
-        toast.success('Счёт создан! Перейдите к оплате');
       } else {
         toast.error(data?.error || 'Ошибка создания счёта');
       }
@@ -284,7 +297,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       name: 'Telegram Stars',
       description: 'Звёзды Telegram',
       logo: telegramStarsLogo,
-      enabled: false,
+      enabled: true,
     },
   ];
 
