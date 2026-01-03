@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Check, Crown, Sparkles, MessageCircle, Users, Infinity, BadgeCheck, Bot, FileText, Headphones, Music, ShoppingBag, GraduationCap, ChevronLeft, ChevronRight, Tag, Loader2, ArrowLeft, HelpCircle, CreditCard, Upload, Copy } from 'lucide-react';
+import { X, Check, Crown, Sparkles, MessageCircle, Users, Infinity, BadgeCheck, Bot, FileText, Headphones, Music, ShoppingBag, GraduationCap, ChevronLeft, ChevronRight, Tag, Loader2, ArrowLeft, HelpCircle, CreditCard, Upload, Copy, Clock } from 'lucide-react';
 import sbpLogo from '@/assets/sbp-logo.png';
 import cryptobotLogo from '@/assets/cryptobot-logo.jpeg';
 import telegramStarsLogo from '@/assets/telegram-stars-logo.jpeg';
@@ -49,6 +49,8 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [manualPaymentLoading, setManualPaymentLoading] = useState(false);
   const [cardCopied, setCardCopied] = useState(false);
+  const [pendingPayment, setPendingPayment] = useState<{ plan: string; amount: number; created_at: string } | null>(null);
+  const [checkingPending, setCheckingPending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { getInitData, webApp } = useTelegram();
   const [pricing, setPricing] = useState<PricingData>({
@@ -60,6 +62,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
   useEffect(() => {
     if (isOpen) {
       loadPricing();
+      checkPendingPayment();
       // Reset state when modal opens
       setPromoCode('');
       setPromoDiscount(0);
@@ -68,7 +71,47 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       setShowManualPayment(false);
       setReceiptFile(null);
     }
-  }, [isOpen]);
+  }, [isOpen, propTelegramId]);
+
+  const checkPendingPayment = async () => {
+    if (!propTelegramId) return;
+    
+    setCheckingPending(true);
+    try {
+      // Get user profile first
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('telegram_id', propTelegramId)
+        .maybeSingle();
+      
+      if (!profile) {
+        setCheckingPending(false);
+        return;
+      }
+
+      // Check for pending payment request
+      const { data: pendingRequest } = await supabase
+        .from('manual_payment_requests')
+        .select('plan, amount, created_at')
+        .eq('user_profile_id', profile.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (pendingRequest) {
+        setPendingPayment(pendingRequest);
+        setSelectedPlan(pendingRequest.plan);
+      } else {
+        setPendingPayment(null);
+      }
+    } catch (err) {
+      console.error('Error checking pending payment:', err);
+    } finally {
+      setCheckingPending(false);
+    }
+  };
 
   const loadPricing = async () => {
     try {
@@ -329,10 +372,14 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       }
 
       if (data?.success) {
-        toast.success('Заявка отправлена! Ожидайте подтверждения');
         setShowManualPayment(false);
         setReceiptFile(null);
-        onClose();
+        // Show pending payment screen
+        setPendingPayment({
+          plan: selectedPlan || 'plus',
+          amount: getCurrentPlanPrice(),
+          created_at: new Date().toISOString()
+        });
       } else {
         toast.error(data?.error || 'Ошибка отправки заявки');
       }
@@ -430,7 +477,39 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
         </Button>
 
         <div className="p-6">
-          {selectedPlan ? (
+          {checkingPending ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Загрузка...</p>
+            </div>
+          ) : pendingPayment ? (
+            /* Pending Payment Screen */
+            <div className="text-center py-6">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/20">
+                <Clock className="h-10 w-10 text-amber-500" />
+              </div>
+              <h2 className="mb-3 font-heading text-xl font-bold">Заявка на проверке</h2>
+              <p className="text-muted-foreground mb-6">
+                Ваш чек на оплату тарифа <span className="font-semibold text-foreground">{pendingPayment.plan === 'plus' ? 'Plus' : 'Premium'}</span> отправлен на проверку.
+              </p>
+              <div className="bg-secondary/50 rounded-xl p-4 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Сумма</span>
+                  <span className="font-semibold">{pendingPayment.amount}₽</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Статус</span>
+                  <span className="text-amber-500 font-medium">Ожидает проверки</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Обычно проверка занимает до 24 часов. После подтверждения оплаты подписка будет активирована автоматически.
+              </p>
+              <Button variant="secondary" className="w-full" onClick={onClose}>
+                Закрыть
+              </Button>
+            </div>
+          ) : selectedPlan ? (
             <>
               {showManualPayment ? (
                 /* Manual Payment Screen */
