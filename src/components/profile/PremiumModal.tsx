@@ -52,7 +52,10 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
   const [pendingPayment, setPendingPayment] = useState<{ plan: string; amount: number; created_at: string } | null>(null);
   const [checkingPending, setCheckingPending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { getInitData, webApp } = useTelegram();
+  const { getInitData, webApp, user } = useTelegram();
+  
+  // Use propTelegramId or fallback to user.id from Telegram WebApp
+  const telegramId = propTelegramId ?? user?.id;
   const [pricing, setPricing] = useState<PricingData>({
     plus: { monthly: 299, yearly: 2510, monthlyOriginal: 598, yearlyOriginal: 5020 },
     premium: { monthly: 2490, yearly: 20916, monthlyOriginal: 4980, yearlyOriginal: 41832 },
@@ -71,10 +74,10 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       setShowManualPayment(false);
       setReceiptFile(null);
     }
-  }, [isOpen, propTelegramId]);
+  }, [isOpen, telegramId]);
 
   const checkPendingPayment = async () => {
-    if (!propTelegramId) return;
+    if (!telegramId) return;
     
     setCheckingPending(true);
     try {
@@ -82,7 +85,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
-        .eq('telegram_id', propTelegramId)
+        .eq('telegram_id', telegramId)
         .maybeSingle();
       
       if (!profile) {
@@ -267,7 +270,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
     const initData = getInitData();
     
     // Need either initData or telegram_id from profile
-    if (!initData && !propTelegramId) {
+    if (!initData && !telegramId) {
       toast.error('Не удалось определить пользователя');
       return;
     }
@@ -282,7 +285,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: {
           initData: initData || null,
-          telegram_id: propTelegramId,
+          telegram_id: telegramId,
           plan: selectedPlan,
           period: billingPeriod,
           amount: price,
@@ -344,7 +347,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
   const handleManualPayment = async () => {
     console.log('handleManualPayment called', { 
       receiptFile: receiptFile?.name, 
-      propTelegramId, 
+      telegramId, 
       selectedPlan, 
       billingPeriod 
     });
@@ -354,8 +357,8 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
       return;
     }
 
-    if (!propTelegramId) {
-      console.error('propTelegramId is missing');
+    if (!telegramId) {
+      console.error('telegramId is missing');
       toast.error('Не удалось определить пользователя');
       return;
     }
@@ -363,7 +366,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
     setManualPaymentLoading(true);
     try {
       const formData = new FormData();
-      formData.append('telegram_id', propTelegramId.toString());
+      formData.append('telegram_id', telegramId.toString());
       formData.append('plan', selectedPlan || 'plus');
       formData.append('billing_period', billingPeriod);
       formData.append('amount', getCurrentPlanPrice().toString());
@@ -374,7 +377,7 @@ export function PremiumModal({ isOpen, onClose, telegramId: propTelegramId, curr
 
       console.log('Sending manual payment request:', {
         url: `${supabaseUrl}/functions/v1/manual-payment`,
-        telegramId: propTelegramId,
+        telegramId,
         plan: selectedPlan || 'plus',
         billingPeriod,
         amount: getCurrentPlanPrice(),
