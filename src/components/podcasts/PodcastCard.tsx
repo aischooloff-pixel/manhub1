@@ -52,14 +52,9 @@ export function PodcastCard({ podcast, onPlay, className, style }: PodcastCardPr
       </div>
 
       <div className="p-3">
-        <h3 className="mb-1 line-clamp-2 text-sm font-medium leading-tight">
+        <h3 className="line-clamp-2 text-sm font-medium leading-tight">
           {podcast.title}
         </h3>
-        {podcast.description && (
-          <p className="line-clamp-2 text-xs text-muted-foreground">
-            {podcast.description}
-          </p>
-        )}
       </div>
     </div>
   );
