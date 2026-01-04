@@ -193,12 +193,16 @@ async function handleStart(chatId: number, user: any, startParam?: string) {
 🔹 <b>Как начать:</b>
 Откройте мини-приложение, чтобы погрузиться в мир ManHub!
 
-📱 Нажмите на кнопку меню, чтобы открыть приложение.
-
 ⛓️‍💥 Подписывайся на наш канал: 
 https://t.me/Man_HubRu`;
 
-  await sendTelegramMessage(chatId, welcomeMessage);
+  const welcomeKeyboard = {
+    inline_keyboard: [
+      [{ text: 'Открыть приложение 🚀', url: 'https://t.me/Man_Hub_bot/Hub' }]
+    ]
+  };
+
+  await sendTelegramMessage(chatId, welcomeMessage, { reply_markup: welcomeKeyboard });
 }
 
 async function handleSupportQuestion(chatId: number, user: any, text: string) {
