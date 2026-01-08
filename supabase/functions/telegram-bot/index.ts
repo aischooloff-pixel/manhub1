@@ -712,6 +712,43 @@ Deno.serve(async (req) => {
         return new Response('OK', { headers: corsHeaders });
       }
       
+      // Handle /users command (admin only)
+      if (text === '/users' && chat.id.toString() === TELEGRAM_ADMIN_CHAT_ID) {
+        // Get total count of all users who interacted with the bot
+        const { count: totalCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        
+        // Get recent users
+        const { data: users } = await supabase
+          .from('profiles')
+          .select('telegram_id, username, first_name, last_name, subscription_tier, is_blocked, reputation, created_at')
+          .order('created_at', { ascending: false })
+          .limit(20);
+        
+        let message = `👥 <b>Все пользователи бота</b> (${totalCount || 0})\n\n`;
+        
+        if (!users || users.length === 0) {
+          message += '<i>Пользователей нет</i>';
+        } else {
+          for (const user of users) {
+            const isPaidUser = user.subscription_tier === 'plus' || user.subscription_tier === 'premium';
+            const premium = isPaidUser ? '👑' : '';
+            const blocked = user.is_blocked ? '🚫' : '';
+            const username = user.username ? `@${user.username}` : `ID:${user.telegram_id}`;
+            const date = user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '';
+            message += `${premium}${blocked} <b>${username}</b> | ⭐ ${user.reputation || 0} | ${date}\n`;
+          }
+          
+          if (totalCount && totalCount > 20) {
+            message += `\n<i>Показано 20 из ${totalCount}. Используйте /users в админ-боте для полного списка.</i>`;
+          }
+        }
+        
+        await sendTelegramMessage(chat.id, message);
+        return new Response('OK', { headers: corsHeaders });
+      }
+      
       // Check if this is a rejection reason from admin
       if (chat.id.toString() === TELEGRAM_ADMIN_CHAT_ID) {
         const handled = await handleRejectionReason(chat.id, from.id, text);
