@@ -117,6 +117,84 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Handle GET request for webhook setup
+  if (req.method === 'GET') {
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action');
+    const cryptobotToken = Deno.env.get('CRYPTOBOT_API_TOKEN');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+
+    if (!cryptobotToken) {
+      return new Response(JSON.stringify({ error: 'CRYPTOBOT_API_TOKEN not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'set_webhook') {
+      const webhookUrl = `${supabaseUrl}/functions/v1/cryptobot-webhook`;
+      
+      const response = await fetch('https://pay.crypt.bot/api/setWebhook', {
+        method: 'POST',
+        headers: {
+          'Crypto-Pay-API-Token': cryptobotToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: webhookUrl }),
+      });
+      
+      const result = await response.json();
+      console.log('CryptoBot setWebhook result:', result);
+      
+      return new Response(JSON.stringify({ 
+        success: result.ok, 
+        webhook_url: webhookUrl,
+        cryptobot_response: result 
+      }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    if (action === 'delete_webhook') {
+      const response = await fetch('https://pay.crypt.bot/api/deleteWebhook', {
+        method: 'POST',
+        headers: {
+          'Crypto-Pay-API-Token': cryptobotToken,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      console.log('CryptoBot deleteWebhook result:', result);
+      
+      return new Response(JSON.stringify({ success: result.ok, cryptobot_response: result }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    if (action === 'info') {
+      const response = await fetch('https://pay.crypt.bot/api/getWebhookUpdates', {
+        method: 'GET',
+        headers: {
+          'Crypto-Pay-API-Token': cryptobotToken,
+        },
+      });
+      
+      const result = await response.json();
+      
+      return new Response(JSON.stringify(result), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    return new Response(JSON.stringify({ 
+      message: 'CryptoBot webhook. Use ?action=set_webhook to configure.',
+      available_actions: ['set_webhook', 'delete_webhook', 'info']
+    }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
+  }
+
   try {
     const cryptobotToken = Deno.env.get('CRYPTOBOT_API_TOKEN');
     if (!cryptobotToken) {
