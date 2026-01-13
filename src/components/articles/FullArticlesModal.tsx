@@ -207,9 +207,9 @@ export function FullArticlesModal({
                         </span>
                       </div>
 
-                      {/* Topic */}
+                      {/* Title */}
                       <h3 className="font-bold text-lg text-foreground mb-1">
-                        {article.topic || article.title}
+                        {article.title}
                       </h3>
 
                       {/* Body text */}
