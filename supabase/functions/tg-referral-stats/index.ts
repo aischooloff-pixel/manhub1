@@ -76,6 +76,13 @@ Deno.serve(async (req) => {
       .eq('telegram_id', user.id)
       .maybeSingle();
 
+    console.log('[tg-referral-stats] Profile lookup:', { 
+      telegram_id: user.id, 
+      profile_id: profile?.id,
+      referral_code: profile?.referral_code,
+      error: profileError?.message 
+    });
+
     if (profileError || !profile) {
       return new Response(
         JSON.stringify({ error: 'Profile not found' }),
@@ -84,13 +91,28 @@ Deno.serve(async (req) => {
     }
 
     // Count referrals
-    const { count: referralCount } = await supabase
+    const { count: referralCount, error: countError } = await supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('referred_by', profile.id);
 
+    console.log('[tg-referral-stats] Referral count:', { 
+      profile_id: profile.id,
+      referralCount, 
+      countError: countError?.message 
+    });
+
+    // Get list of referred users for debugging
+    const { data: referredUsers } = await supabase
+      .from('profiles')
+      .select('id, username, first_name, created_at')
+      .eq('referred_by', profile.id)
+      .limit(10);
+    
+    console.log('[tg-referral-stats] Referred users:', referredUsers);
+
     // Get earnings history with referred user names
-    const { data: earnings } = await supabase
+    const { data: earnings, error: earningsError } = await supabase
       .from('referral_earnings')
       .select(`
         id,
@@ -103,6 +125,11 @@ Deno.serve(async (req) => {
       .eq('referrer_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(20);
+    
+    console.log('[tg-referral-stats] Earnings:', { 
+      count: earnings?.length, 
+      error: earningsError?.message 
+    });
 
     const formattedEarnings = (earnings || []).map((e: any) => ({
       id: e.id,
