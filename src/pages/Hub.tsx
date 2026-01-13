@@ -98,6 +98,7 @@ export default function Hub() {
     author: (article.is_anonymous && !isAdmin) ? undefined : getAuthorDisplay(article.author),
     category_id: article.category_id || '',
     topic_id: '',
+    topic: article.topic || undefined,
     title: article.title,
     preview: article.preview || '',
     body: article.body,
