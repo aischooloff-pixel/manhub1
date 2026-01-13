@@ -7,21 +7,16 @@ const corsHeaders = {
 };
 
 // Verify CryptoBot webhook signature using Web Crypto API
+// According to CryptoBot docs: secret = SHA256(token), signature = HMAC-SHA256(secret, body)
 async function verifySignature(body: string, signature: string, token: string): Promise<boolean> {
   try {
     const encoder = new TextEncoder();
     
-    // Create secret key: HMAC-SHA256("WebAppData", token)
-    const webAppDataKey = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode('WebAppData'),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    const secretBytes = await crypto.subtle.sign('HMAC', webAppDataKey, encoder.encode(token));
+    // Step 1: Create secret by hashing the token with SHA-256
+    const tokenBytes = encoder.encode(token);
+    const secretBytes = await crypto.subtle.digest('SHA-256', tokenBytes);
     
-    // Create check hash: HMAC-SHA256(secret, body)
+    // Step 2: Create HMAC-SHA256 of the body using the secret
     const secretKey = await crypto.subtle.importKey(
       'raw',
       secretBytes,
@@ -31,9 +26,15 @@ async function verifySignature(body: string, signature: string, token: string): 
     );
     const hashBytes = await crypto.subtle.sign('HMAC', secretKey, encoder.encode(body));
     
-    // Convert to hex
+    // Step 3: Convert to hex and compare
     const hashArray = Array.from(new Uint8Array(hashBytes));
     const checkHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    console.log('Signature verification:', { 
+      receivedSignature: signature?.substring(0, 20) + '...', 
+      calculatedHash: checkHash.substring(0, 20) + '...',
+      match: checkHash === signature 
+    });
     
     return checkHash === signature;
   } catch (e) {
