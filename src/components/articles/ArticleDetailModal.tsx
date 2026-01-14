@@ -253,21 +253,24 @@ export function ArticleDetailModal({
           {/* Author Section */}
           {article.author && !article.is_anonymous && (
             <div className="border-b border-border p-4">
-              <button
-                onClick={() => {
+              <div
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   if (onAuthorClick && article.author) {
                     onAuthorClick(article.author.id);
                   }
                 }}
-                className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity"
-                disabled={!onAuthorClick}
+                className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity cursor-pointer active:opacity-60"
+                role="button"
+                tabIndex={0}
               >
                 <img
                   src={article.author.avatar_url || '/placeholder.svg'}
                   alt={article.author.first_name}
-                  className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20"
+                  className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20 pointer-events-none"
                 />
-                <div className="flex-1">
+                <div className="flex-1 pointer-events-none">
                   <div className="flex items-center gap-2">
                     {(article.author.subscription_tier === 'plus' || article.author.subscription_tier === 'premium') && (
                       <Crown className="h-4 w-4 text-yellow-500" />
@@ -281,7 +284,7 @@ export function ArticleDetailModal({
                     <p className="text-sm text-muted-foreground">@{article.author.username}</p>
                   )}
                 </div>
-              </button>
+              </div>
               
               {/* Author Stats */}
               <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
@@ -391,29 +394,43 @@ export function ArticleDetailModal({
                     <div key={c.id} className="space-y-2">
                       {/* Main comment */}
                       <div className="flex gap-3">
-                        <button
-                          onClick={() => c.author?.id && onAuthorClick?.(c.author.id)}
-                          className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                          disabled={!c.author?.id || !onAuthorClick}
+                        <div
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (c.author?.id && onAuthorClick) {
+                              onAuthorClick(c.author.id);
+                            }
+                          }}
+                          className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity active:opacity-60"
+                          role="button"
+                          tabIndex={0}
                         >
                           <img
                             src={c.author?.avatar_url || '/placeholder.svg'}
                             alt=""
-                            className="h-8 w-8 rounded-full object-cover"
+                            className="h-8 w-8 rounded-full object-cover pointer-events-none"
                           />
-                        </button>
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             {(c.author?.subscription_tier === 'plus' || c.author?.subscription_tier === 'premium') && (
                               <Crown className="h-3 w-3 text-yellow-500" />
                             )}
-                            <button
-                              onClick={() => c.author?.id && onAuthorClick?.(c.author.id)}
-                              className="text-sm font-medium hover:text-primary transition-colors"
-                              disabled={!c.author?.id || !onAuthorClick}
+                            <span
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (c.author?.id && onAuthorClick) {
+                                  onAuthorClick(c.author.id);
+                                }
+                              }}
+                              className="text-sm font-medium hover:text-primary transition-colors cursor-pointer active:text-primary/60"
+                              role="button"
+                              tabIndex={0}
                             >
                               {c.author?.first_name || 'Пользователь'}
-                            </button>
+                            </span>
                             {c.author?.id && <AuthorBadge userProfileId={c.author.id} className="text-xs" />}
                             <span className="text-xs text-muted-foreground">
                               {formatCommentDate(c.created_at)}
