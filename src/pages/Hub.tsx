@@ -9,6 +9,7 @@ import { UserArticlesModal } from '@/components/profile/UserArticlesModal';
 import { FullArticlesModal } from '@/components/articles/FullArticlesModal';
 import { ArticleDetailModal } from '@/components/articles/ArticleDetailModal';
 import { UpgradeToPlusModal } from '@/components/profile/UpgradeToPlusModal';
+import { PublicProfileModal } from '@/components/profile/PublicProfileModal';
 import { RulesModal, useRulesModal } from '@/components/hub/RulesModal';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,6 +31,7 @@ export default function Hub() {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
 
   const [allArticles, setAllArticles] = useState<HookArticle[]>([]);
   const [myArticles, setMyArticles] = useState<HookArticle[]>([]);
@@ -235,7 +237,20 @@ export default function Hub() {
         onDeleteClick={handleDeleteArticle}
       />
       <FullArticlesModal isOpen={isAllArticlesOpen} onClose={() => setIsAllArticlesOpen(false)} initialArticles={allArticles.map(mapArticle)} initialCategory={selectedCategory} onArticleCreated={handleArticleCreated} />
-      <ArticleDetailModal isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} article={selectedArticle} />
+      <ArticleDetailModal 
+        isOpen={!!selectedArticle} 
+        onClose={() => setSelectedArticle(null)} 
+        article={selectedArticle} 
+        onAuthorClick={(authorId) => {
+          setSelectedArticle(null);
+          setSelectedAuthorId(authorId);
+        }}
+      />
+      <PublicProfileModal 
+        isOpen={!!selectedAuthorId} 
+        onClose={() => setSelectedAuthorId(null)} 
+        authorId={selectedAuthorId} 
+      />
       <UpgradeToPlusModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} feature="articles" />
       <RulesModal isOpen={showRules} onClose={closeRules} remainingViews={remainingViews} />
     </div>
