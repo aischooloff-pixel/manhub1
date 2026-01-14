@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Heart, MessageCircle, Bookmark, Send, Loader2, Crown, Calendar, FileText, Star, Flag, ChevronDown, ChevronUp, Reply, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,23 @@ export function ArticleDetailModal({
   const [authorArticlesCount, setAuthorArticlesCount] = useState(0);
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const authorClickHandled = useRef(false);
+  
+  const handleAuthorClick = useCallback((authorId: string) => {
+    // Prevent double calls from both onClick and onTouchEnd
+    if (authorClickHandled.current) return;
+    authorClickHandled.current = true;
+    
+    console.log('[ArticleDetailModal] handleAuthorClick called:', authorId);
+    if (onAuthorClick) {
+      onAuthorClick(authorId);
+    }
+    
+    // Reset flag after a short delay
+    setTimeout(() => {
+      authorClickHandled.current = false;
+    }, 300);
+  }, [onAuthorClick]);
 
   const { toggleLike, toggleFavorite, addComment, getArticleState, reportArticle, addView } = useArticles();
 
@@ -257,8 +274,15 @@ export function ArticleDetailModal({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (onAuthorClick && article.author) {
-                    onAuthorClick(article.author.id);
+                  if (article.author) {
+                    handleAuthorClick(article.author.id);
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (article.author) {
+                    handleAuthorClick(article.author.id);
                   }
                 }}
                 className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity cursor-pointer active:opacity-60"
@@ -398,8 +422,15 @@ export function ArticleDetailModal({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (c.author?.id && onAuthorClick) {
-                              onAuthorClick(c.author.id);
+                            if (c.author?.id) {
+                              handleAuthorClick(c.author.id);
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (c.author?.id) {
+                              handleAuthorClick(c.author.id);
                             }
                           }}
                           className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity active:opacity-60"
@@ -421,8 +452,15 @@ export function ArticleDetailModal({
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                if (c.author?.id && onAuthorClick) {
-                                  onAuthorClick(c.author.id);
+                                if (c.author?.id) {
+                                  handleAuthorClick(c.author.id);
+                                }
+                              }}
+                              onTouchEnd={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (c.author?.id) {
+                                  handleAuthorClick(c.author.id);
                                 }
                               }}
                               className="text-sm font-medium hover:text-primary transition-colors cursor-pointer active:text-primary/60"
@@ -479,29 +517,49 @@ export function ArticleDetailModal({
                         <div className="ml-8 pl-4 border-l-2 border-primary/30 space-y-3">
                           {replies.map((reply) => (
                             <div key={reply.id} className="flex gap-3 bg-secondary/30 rounded-lg p-2">
-                              <button
-                                onClick={() => reply.author?.id && onAuthorClick?.(reply.author.id)}
+                              <div
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (reply.author?.id) handleAuthorClick(reply.author.id);
+                                }}
+                                onTouchEnd={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (reply.author?.id) handleAuthorClick(reply.author.id);
+                                }}
                                 className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                                disabled={!reply.author?.id || !onAuthorClick}
+                                role="button"
+                                tabIndex={0}
                               >
                                 <img
                                   src={reply.author?.avatar_url || '/placeholder.svg'}
                                   alt=""
-                                  className="h-6 w-6 rounded-full object-cover"
+                                  className="h-6 w-6 rounded-full object-cover pointer-events-none"
                                 />
-                              </button>
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   {(reply.author?.subscription_tier === 'plus' || reply.author?.subscription_tier === 'premium') && (
                                     <Crown className="h-2.5 w-2.5 text-yellow-500" />
                                   )}
-                                  <button
-                                    onClick={() => reply.author?.id && onAuthorClick?.(reply.author.id)}
-                                    className="text-xs font-medium hover:text-primary transition-colors"
-                                    disabled={!reply.author?.id || !onAuthorClick}
+                                  <span
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (reply.author?.id) handleAuthorClick(reply.author.id);
+                                    }}
+                                    onTouchEnd={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (reply.author?.id) handleAuthorClick(reply.author.id);
+                                    }}
+                                    className="text-xs font-medium hover:text-primary transition-colors cursor-pointer"
+                                    role="button"
+                                    tabIndex={0}
                                   >
                                     {reply.author?.first_name || 'Пользователь'}
-                                  </button>
+                                  </span>
                                   {reply.author?.id && <AuthorBadge userProfileId={reply.author.id} className="text-[10px]" />}
                                   <span className="text-[10px] text-muted-foreground">
                                     {formatCommentDate(reply.created_at)}
