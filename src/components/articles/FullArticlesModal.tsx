@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { CategoryList } from '@/components/categories/CategoryList';
 import { ArticleDetailModal } from '@/components/articles/ArticleDetailModal';
 import { CreateArticleModal } from '@/components/articles/CreateArticleModal';
+import { PublicProfileModal } from '@/components/profile/PublicProfileModal';
 import { cn } from '@/lib/utils';
 import { mockCategories } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +33,12 @@ export function FullArticlesModal({
   const [loading, setLoading] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
+
+  const handleAuthorClick = (authorId: string) => {
+    setSelectedArticle(null);
+    setSelectedAuthorId(authorId);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -267,6 +274,13 @@ export function FullArticlesModal({
         isOpen={!!selectedArticle}
         onClose={() => setSelectedArticle(null)}
         article={selectedArticle}
+        onAuthorClick={handleAuthorClick}
+      />
+
+      <PublicProfileModal
+        isOpen={!!selectedAuthorId}
+        onClose={() => setSelectedAuthorId(null)}
+        authorId={selectedAuthorId}
       />
 
       <CreateArticleModal

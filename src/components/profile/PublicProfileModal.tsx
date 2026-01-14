@@ -650,6 +650,7 @@ export function PublicProfileModal({ isOpen, onClose, authorId }: PublicProfileM
         isOpen={articleDetailOpen}
         onClose={() => setArticleDetailOpen(false)}
         article={selectedArticle}
+        onAuthorClick={handleReputationAuthorClick}
       />
 
       {/* Video Player Modal */}
