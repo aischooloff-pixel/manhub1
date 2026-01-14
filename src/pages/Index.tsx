@@ -274,7 +274,7 @@ export default function Index() {
 
         {/* Podcasts */}
         <PodcastCarousel
-          title="Подкасты"
+          title="Подкасты · Включи VPN"
           className="mb-8"
         />
 
