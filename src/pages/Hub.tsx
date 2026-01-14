@@ -242,8 +242,10 @@ export default function Hub() {
         onClose={() => setSelectedArticle(null)} 
         article={selectedArticle} 
         onAuthorClick={(authorId) => {
+          console.log('[Hub] onAuthorClick called with:', authorId);
           setSelectedArticle(null);
           setSelectedAuthorId(authorId);
+          console.log('[Hub] selectedAuthorId set to:', authorId);
         }}
       />
       <PublicProfileModal 
