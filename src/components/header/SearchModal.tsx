@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { ArticleDetailModal } from '@/components/articles/ArticleDetailModal';
+import { PublicProfileModal } from '@/components/profile/PublicProfileModal';
 import { Article as TypeArticle } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +45,12 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [searched, setSearched] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<TypeArticle | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
+
+  const handleAuthorClick = (authorId: string) => {
+    setSelectedArticle(null);
+    setSelectedAuthorId(authorId);
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
@@ -402,6 +409,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         isOpen={!!selectedArticle}
         onClose={() => setSelectedArticle(null)}
         article={selectedArticle}
+        onAuthorClick={handleAuthorClick}
+      />
+
+      <PublicProfileModal
+        isOpen={!!selectedAuthorId}
+        onClose={() => setSelectedAuthorId(null)}
+        authorId={selectedAuthorId}
       />
     </>
   );

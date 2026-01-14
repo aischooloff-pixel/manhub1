@@ -13,6 +13,7 @@ import { SupportModal } from '@/components/profile/SupportModal';
 import { ProductsModal } from '@/components/profile/ProductsModal';
 import { ReferralModal } from '@/components/profile/ReferralModal';
 import { UserBadges } from '@/components/profile/UserBadges';
+import { PublicProfileModal } from '@/components/profile/PublicProfileModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,6 +60,12 @@ export default function Profile() {
   const [favoritesLoading, setFavoritesLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
+
+  const handleAuthorClick = (authorId: string) => {
+    setSelectedArticle(null);
+    setSelectedAuthorId(authorId);
+  };
 
   // Listen for tab switch events from side menu
   useEffect(() => {
@@ -677,6 +684,12 @@ export default function Profile() {
         isOpen={!!selectedArticle}
         onClose={() => setSelectedArticle(null)}
         article={selectedArticle}
+        onAuthorClick={handleAuthorClick}
+      />
+      <PublicProfileModal
+        isOpen={!!selectedAuthorId}
+        onClose={() => setSelectedAuthorId(null)}
+        authorId={selectedAuthorId}
       />
       <ReputationHistoryModal isOpen={isRepHistoryOpen} onClose={() => setIsRepHistoryOpen(false)} />
       <SocialLinksModal
