@@ -61,6 +61,7 @@ export default function Profile() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
+  const [referralPercent, setReferralPercent] = useState(30);
 
   const handleAuthorClick = (authorId: string) => {
     setSelectedArticle(null);
@@ -91,6 +92,26 @@ export default function Profile() {
     };
     loadArticles();
   }, [getUserArticles]);
+
+  // Load partner status for referral percent
+  useEffect(() => {
+    const checkPartnerStatus = async () => {
+      if (!profile?.id) return;
+      try {
+        const { data } = await supabase
+          .from('user_badges')
+          .select('id')
+          .eq('user_profile_id', profile.id)
+          .eq('badge', 'partner')
+          .maybeSingle();
+        
+        setReferralPercent(data ? 50 : 30);
+      } catch (err) {
+        console.error('Error checking partner status:', err);
+      }
+    };
+    checkPartnerStatus();
+  }, [profile?.id]);
 
   // Load favorites
   useEffect(() => {
@@ -626,7 +647,9 @@ export default function Profile() {
               </div>
               <div className="flex-1">
                 <h3 className="font-heading text-base font-semibold">Реферальная система</h3>
-                <p className="text-xs text-muted-foreground">Получай 30% от покупок приглашённых</p>
+                <p className="text-xs text-muted-foreground">
+                  Получай {referralPercent}% от покупок приглашённых
+                </p>
               </div>
             </div>
             <Button 

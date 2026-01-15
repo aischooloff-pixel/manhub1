@@ -16,6 +16,8 @@ interface ReferralModalProps {
 interface ReferralStats {
   referralCount: number;
   totalEarnings: number;
+  isPartner: boolean;
+  referralPercent: number;
   earnings: Array<{
     id: string;
     purchase_amount: number;
@@ -108,7 +110,8 @@ export function ReferralModal({ isOpen, onClose, referralCode }: ReferralModalPr
         <div className="p-6">
           <h2 className="font-heading text-xl font-semibold mb-2">Реферальная система</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Приглашай друзей и получай 30% от их покупок
+            Приглашай друзей и получай {stats?.referralPercent || 30}% от их покупок
+            {stats?.isPartner && <span className="ml-1 text-primary">(Партнёр)</span>}
           </p>
 
           {/* Stats Cards */}

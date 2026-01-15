@@ -102,14 +102,16 @@ Deno.serve(async (req) => {
       countError: countError?.message 
     });
 
-    // Get list of referred users for debugging
-    const { data: referredUsers } = await supabase
-      .from('profiles')
-      .select('id, username, first_name, created_at')
-      .eq('referred_by', profile.id)
-      .limit(10);
+    // Check if user has partner badge
+    const { data: partnerBadge } = await supabase
+      .from('user_badges')
+      .select('id')
+      .eq('user_profile_id', profile.id)
+      .eq('badge', 'partner')
+      .maybeSingle();
     
-    console.log('[tg-referral-stats] Referred users:', referredUsers);
+    const isPartner = !!partnerBadge;
+    console.log('[tg-referral-stats] Partner check:', { profile_id: profile.id, isPartner });
 
     // Get earnings history with referred user names
     const { data: earnings, error: earningsError } = await supabase
@@ -146,6 +148,8 @@ Deno.serve(async (req) => {
         referralCount: referralCount || 0,
         totalEarnings: profile.referral_earnings || 0,
         earnings: formattedEarnings,
+        isPartner: isPartner,
+        referralPercent: isPartner ? 50 : 30,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
