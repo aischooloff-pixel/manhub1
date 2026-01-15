@@ -304,15 +304,15 @@ serve(async (req) => {
       // Use amount_rub from payload (the price in rubles set by admin)
       const purchaseAmount = Number(amount_rub);
       
-      // Check if referrer has partner role (50%), otherwise 30%
-      const { data: partnerRole } = await supabase
-        .from('user_roles')
+      // Check if referrer has partner badge (50%), otherwise 30%
+      const { data: partnerBadge } = await supabase
+        .from('user_badges')
         .select('id')
-        .eq('user_id', profile.referred_by)
-        .eq('role', 'partner')
+        .eq('user_profile_id', profile.referred_by)
+        .eq('badge', 'partner')
         .maybeSingle();
       
-      const referralPercent = partnerRole ? 0.5 : 0.3;
+      const referralPercent = partnerBadge ? 0.5 : 0.3;
       const earningAmount = purchaseAmount * referralPercent;
 
       await supabase.from('referral_earnings').insert({
@@ -338,7 +338,7 @@ serve(async (req) => {
         
         // Notify referrer
         if (referrer.telegram_id) {
-          const percentText = partnerRole ? '50%' : '30%';
+          const percentText = partnerBadge ? '50%' : '30%';
           await sendTelegramMessage(
             referrer.telegram_id,
             `💰 <b>Реферальный доход!</b>\n\nВаш реферал оформил подписку ${plan.toUpperCase()}.\n\n<b>Ваш доход (${percentText}):</b> ${earningAmount.toFixed(0)}₽`

@@ -4876,15 +4876,15 @@ async function handleManualPaymentApprove(callbackQuery: any, paymentId: string)
   if (profile?.referred_by) {
     const amount = payment.amount;
     
-    // Check if referrer has partner role
-    const { data: partnerRole } = await supabase
-      .from('user_roles')
+    // Check if referrer has partner badge
+    const { data: partnerBadge } = await supabase
+      .from('user_badges')
       .select('id')
-      .eq('user_id', profile.referred_by)
-      .eq('role', 'partner')
+      .eq('user_profile_id', profile.referred_by)
+      .eq('badge', 'partner')
       .maybeSingle();
     
-    const referralPercent = partnerRole ? 0.5 : 0.3;
+    const referralPercent = partnerBadge ? 0.5 : 0.3;
     const earningAmount = amount * referralPercent;
     
     // Record referral earning
@@ -4913,7 +4913,7 @@ async function handleManualPaymentApprove(callbackQuery: any, paymentId: string)
 
       // Notify referrer
       if (referrer.telegram_id) {
-        const percentText = partnerRole ? '50%' : '30%';
+        const percentText = partnerBadge ? '50%' : '30%';
         await sendUserMessage(
           referrer.telegram_id,
           `💰 <b>Реферальный доход!</b>\n\nВаш реферал оформил подписку ${payment.plan.toUpperCase()}.\n\n<b>Ваш доход (${percentText}):</b> ${earningAmount.toFixed(0)}₽`
