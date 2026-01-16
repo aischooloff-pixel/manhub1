@@ -3647,27 +3647,76 @@ async function handleBroadcastConfirm(callbackQuery: any) {
     mediaType: state.media_type,
   });
 
-  // Convert file_id to URL once before the loop (file_id from Admin Bot doesn't work with User Bot)
-  let mediaUrl: string | null = null;
-  if (state.media_id) {
-    mediaUrl = await getFileUrl(state.media_id);
-    if (!mediaUrl) {
-      await sendAdminMessage(message.chat.id, '⚠️ Не удалось получить URL медиа, рассылка будет только текстовой');
-    } else {
-      console.log('Media URL obtained:', mediaUrl);
-    }
-  }
+  // For media broadcasts: we need to get a file_id that works with User Bot
+  // Strategy: Download the file and upload it to the first successful user, 
+  // then reuse that file_id for subsequent users
+  let userBotFileId: string | null = null;
+  const hasMedia = state.media_id && state.media_type;
 
   for (const user of users) {
     if (!user.telegram_id) continue;
 
     try {
       let result: any;
-      if (mediaUrl && state.media_type === 'photo') {
-        result = await sendUserPhoto(user.telegram_id, mediaUrl, broadcastText);
-      } else if (mediaUrl && state.media_type === 'video') {
-        result = await sendUserVideo(user.telegram_id, mediaUrl, broadcastText);
+      
+      if (hasMedia && !userBotFileId) {
+        // First user with media: download file bytes and send via InputFile approach
+        // Get file URL from Admin Bot
+        const fileUrl = await getFileUrl(state.media_id);
+        if (fileUrl) {
+          // Download file content
+          const fileResponse = await fetch(fileUrl);
+          if (fileResponse.ok) {
+            const fileBlob = await fileResponse.blob();
+            
+            // Send using multipart/form-data
+            const formData = new FormData();
+            formData.append('chat_id', user.telegram_id.toString());
+            if (broadcastText) {
+              formData.append('caption', broadcastText);
+              formData.append('parse_mode', 'HTML');
+            }
+            
+            const fileName = state.media_type === 'photo' ? 'photo.jpg' : 'video.mp4';
+            formData.append(state.media_type, fileBlob, fileName);
+            
+            const endpoint = state.media_type === 'photo' 
+              ? `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`
+              : `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`;
+            
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              body: formData,
+            });
+            result = await response.json();
+            
+            // Extract file_id from successful response for subsequent sends
+            if (result?.ok && result?.result) {
+              if (state.media_type === 'photo' && result.result.photo?.length > 0) {
+                // Get largest photo
+                userBotFileId = result.result.photo[result.result.photo.length - 1].file_id;
+              } else if (state.media_type === 'video' && result.result.video?.file_id) {
+                userBotFileId = result.result.video.file_id;
+              }
+              console.log('Captured User Bot file_id:', userBotFileId);
+            }
+          } else {
+            // Fallback to text only
+            result = await sendUserMessage(user.telegram_id, broadcastText);
+          }
+        } else {
+          // No media URL available, send text only
+          result = await sendUserMessage(user.telegram_id, broadcastText);
+        }
+      } else if (hasMedia && userBotFileId) {
+        // Subsequent users: use cached User Bot file_id
+        if (state.media_type === 'photo') {
+          result = await sendUserPhoto(user.telegram_id, userBotFileId, broadcastText);
+        } else {
+          result = await sendUserVideo(user.telegram_id, userBotFileId, broadcastText);
+        }
       } else {
+        // No media, text only
         result = await sendUserMessage(user.telegram_id, broadcastText);
       }
 
