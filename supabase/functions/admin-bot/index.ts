@@ -2609,7 +2609,8 @@ async function handlePodcasts(chatId: number, userId: number) {
 
   const keyboard = {
     inline_keyboard: [
-      [{ text: '➕ Добавить', callback_data: 'podcast_add' }],
+      [{ text: '📤 Загрузить видео', callback_data: 'podcast_add_video' }],
+      [{ text: '🔗 Добавить YouTube', callback_data: 'podcast_add' }],
       [{ text: '🗑 Удалить', callback_data: 'podcast_delete_list' }],
     ],
   };
@@ -2617,7 +2618,7 @@ async function handlePodcasts(chatId: number, userId: number) {
   await sendAdminMessage(chatId, message, { reply_markup: keyboard });
 }
 
-// Handle podcast add start
+// Handle podcast add start (YouTube)
 async function handlePodcastAddStart(callbackQuery: any) {
   const { id, message, from } = callbackQuery;
 
@@ -2634,13 +2635,41 @@ async function handlePodcastAddStart(callbackQuery: any) {
   // Store state
   await supabase.from('admin_settings').upsert({
     key: `pending_podcast_${from.id}`,
-    value: JSON.stringify({ step: 'url' }),
+    value: JSON.stringify({ step: 'url', type: 'youtube' }),
   });
 
   await answerCallbackQuery(id);
-  await sendAdminMessage(message.chat.id, `🎙 <b>Добавление подкаста</b>
+  await sendAdminMessage(message.chat.id, `🎙 <b>Добавление подкаста (YouTube)</b>
 
 Шаг 1/3: Отправьте ссылку на YouTube видео`);
+}
+
+// Handle podcast add video start
+async function handlePodcastAddVideoStart(callbackQuery: any) {
+  const { id, message, from } = callbackQuery;
+
+  // Check limit
+  const { count } = await supabase
+    .from('podcasts')
+    .select('*', { count: 'exact', head: true });
+
+  if ((count || 0) >= MAX_PODCASTS) {
+    await answerCallbackQuery(id, '❌ Ошибка, загружено уже 10 роликов');
+    return;
+  }
+
+  // Store state
+  await supabase.from('admin_settings').upsert({
+    key: `pending_podcast_${from.id}`,
+    value: JSON.stringify({ step: 'video', type: 'upload' }),
+  });
+
+  await answerCallbackQuery(id);
+  await sendAdminMessage(message.chat.id, `📤 <b>Загрузка видео-подкаста</b>
+
+Шаг 1/4: Отправьте видео-файл (до 50 МБ)
+
+💡 Видео будет работать без VPN для пользователей из России`);
 }
 
 // Handle podcast URL input
@@ -2660,71 +2689,291 @@ async function handlePodcastUrlInput(chatId: number, userId: number, text: strin
     return false;
   }
 
-  if (state.step === 'url') {
-    const youtubeId = extractYouTubeId(text.trim());
-    if (!youtubeId) {
-      await sendAdminMessage(chatId, '❌ Неверная ссылка на YouTube. Попробуйте ещё раз.');
-      return true;
-    }
+  // Handle YouTube flow
+  if (state.type === 'youtube') {
+    if (state.step === 'url') {
+      const youtubeId = extractYouTubeId(text.trim());
+      if (!youtubeId) {
+        await sendAdminMessage(chatId, '❌ Неверная ссылка на YouTube. Попробуйте ещё раз.');
+        return true;
+      }
 
-    // Update state
-    await supabase.from('admin_settings').upsert({
-      key: `pending_podcast_${userId}`,
-      value: JSON.stringify({ step: 'title', youtube_id: youtubeId, youtube_url: text.trim() }),
-    });
+      await supabase.from('admin_settings').upsert({
+        key: `pending_podcast_${userId}`,
+        value: JSON.stringify({ ...state, step: 'title', youtube_id: youtubeId, youtube_url: text.trim() }),
+      });
 
-    await sendAdminMessage(chatId, `✅ Ссылка принята!
+      await sendAdminMessage(chatId, `✅ Ссылка принята!
 
 Шаг 2/3: Отправьте заголовок подкаста`);
-    return true;
-  }
-
-  if (state.step === 'title') {
-    // Accept any text as title (no YouTube validation here!)
-    await supabase.from('admin_settings').upsert({
-      key: `pending_podcast_${userId}`,
-      value: JSON.stringify({ ...state, step: 'description', title: text.trim() }),
-    });
-
-    await sendAdminMessage(chatId, `✅ Заголовок сохранён!
-
-Шаг 3/3: Отправьте описание подкаста`);
-  }
-
-  if (state.step === 'description') {
-    // Check limit again
-    const { count } = await supabase
-      .from('podcasts')
-      .select('*', { count: 'exact', head: true });
-
-    if ((count || 0) >= MAX_PODCASTS) {
-      await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
-      await sendAdminMessage(chatId, '❌ Ошибка, загружено уже 10 роликов');
       return true;
     }
 
-    // Save podcast
-    const { error } = await supabase.from('podcasts').insert({
-      youtube_url: state.youtube_url,
-      youtube_id: state.youtube_id,
-      title: state.title,
-      description: text.trim(),
-      thumbnail_url: `https://img.youtube.com/vi/${state.youtube_id}/maxresdefault.jpg`,
-    });
+    if (state.step === 'title') {
+      await supabase.from('admin_settings').upsert({
+        key: `pending_podcast_${userId}`,
+        value: JSON.stringify({ ...state, step: 'description', title: text.trim() }),
+      });
 
-    // Clear state
-    await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
+      await sendAdminMessage(chatId, `✅ Заголовок сохранён!
 
-    if (error) {
-      console.error('Error saving podcast:', error);
-      await sendAdminMessage(chatId, '❌ Ошибка при сохранении');
-    } else {
-      await sendAdminMessage(chatId, `✅ Подкаст "${state.title}" успешно добавлен!`);
+Шаг 3/3: Отправьте описание подкаста`);
+      return true;
     }
-    return true;
+
+    if (state.step === 'description') {
+      const { count } = await supabase
+        .from('podcasts')
+        .select('*', { count: 'exact', head: true });
+
+      if ((count || 0) >= MAX_PODCASTS) {
+        await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
+        await sendAdminMessage(chatId, '❌ Ошибка, загружено уже 10 роликов');
+        return true;
+      }
+
+      const { error } = await supabase.from('podcasts').insert({
+        youtube_url: state.youtube_url,
+        youtube_id: state.youtube_id,
+        title: state.title,
+        description: text.trim(),
+        thumbnail_url: `https://img.youtube.com/vi/${state.youtube_id}/maxresdefault.jpg`,
+      });
+
+      await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
+
+      if (error) {
+        console.error('Error saving podcast:', error);
+        await sendAdminMessage(chatId, '❌ Ошибка при сохранении');
+      } else {
+        await sendAdminMessage(chatId, `✅ Подкаст "${state.title}" успешно добавлен!`);
+      }
+      return true;
+    }
+  }
+
+  // Handle video upload flow
+  if (state.type === 'upload') {
+    if (state.step === 'title') {
+      await supabase.from('admin_settings').upsert({
+        key: `pending_podcast_${userId}`,
+        value: JSON.stringify({ ...state, step: 'description', title: text.trim() }),
+      });
+
+      await sendAdminMessage(chatId, `✅ Заголовок сохранён!
+
+Шаг 3/4: Отправьте описание подкаста`);
+      return true;
+    }
+
+    if (state.step === 'description') {
+      await supabase.from('admin_settings').upsert({
+        key: `pending_podcast_${userId}`,
+        value: JSON.stringify({ ...state, step: 'thumbnail', description: text.trim() }),
+      });
+
+      await sendAdminMessage(chatId, `✅ Описание сохранено!
+
+Шаг 4/4: Отправьте обложку (фото) или напишите "пропустить"`);
+      return true;
+    }
+
+    if (state.step === 'thumbnail' && text.trim().toLowerCase() === 'пропустить') {
+      // Save without thumbnail
+      const { count } = await supabase
+        .from('podcasts')
+        .select('*', { count: 'exact', head: true });
+
+      if ((count || 0) >= MAX_PODCASTS) {
+        await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
+        await sendAdminMessage(chatId, '❌ Ошибка, загружено уже 10 роликов');
+        return true;
+      }
+
+      const { error } = await supabase.from('podcasts').insert({
+        youtube_url: '',
+        youtube_id: '',
+        title: state.title,
+        description: state.description,
+        video_url: state.video_url,
+        thumbnail_url: null,
+      });
+
+      await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
+
+      if (error) {
+        console.error('Error saving video podcast:', error);
+        await sendAdminMessage(chatId, '❌ Ошибка при сохранении');
+      } else {
+        await sendAdminMessage(chatId, `✅ Видео-подкаст "${state.title}" успешно добавлен! 🎉
+
+💡 Видео будет доступно без VPN`);
+      }
+      return true;
+    }
   }
 
   return false;
+}
+
+// Handle video file upload for podcast
+async function handlePodcastVideoUpload(chatId: number, userId: number, video: any): Promise<boolean> {
+  const { data: pending } = await supabase
+    .from('admin_settings')
+    .select('value')
+    .eq('key', `pending_podcast_${userId}`)
+    .maybeSingle();
+
+  if (!pending) return false;
+
+  let state;
+  try {
+    state = JSON.parse(pending.value || '{}');
+  } catch {
+    return false;
+  }
+
+  if (state.type !== 'upload' || state.step !== 'video') return false;
+
+  // Download video from Telegram
+  const fileId = video.file_id;
+  const fileResponse = await fetch(`https://api.telegram.org/bot${ADMIN_BOT_TOKEN}/getFile?file_id=${fileId}`);
+  const fileData = await fileResponse.json();
+
+  if (!fileData.ok) {
+    await sendAdminMessage(chatId, '❌ Ошибка при получении файла');
+    return true;
+  }
+
+  const filePath = fileData.result.file_path;
+  const downloadUrl = `https://api.telegram.org/file/bot${ADMIN_BOT_TOKEN}/${filePath}`;
+
+  // Download the file
+  const videoResponse = await fetch(downloadUrl);
+  const videoBlob = await videoResponse.blob();
+
+  // Generate unique filename
+  const filename = `podcast_${Date.now()}_${userId}.mp4`;
+
+  // Upload to Supabase Storage
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('podcast-videos')
+    .upload(filename, videoBlob, {
+      contentType: video.mime_type || 'video/mp4',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    console.error('Error uploading video:', uploadError);
+    await sendAdminMessage(chatId, '❌ Ошибка при загрузке видео: ' + uploadError.message);
+    return true;
+  }
+
+  // Get public URL
+  const { data: publicUrl } = supabase.storage
+    .from('podcast-videos')
+    .getPublicUrl(filename);
+
+  // Update state with video URL
+  await supabase.from('admin_settings').upsert({
+    key: `pending_podcast_${userId}`,
+    value: JSON.stringify({ ...state, step: 'title', video_url: publicUrl.publicUrl }),
+  });
+
+  await sendAdminMessage(chatId, `✅ Видео загружено!
+
+Шаг 2/4: Отправьте заголовок подкаста`);
+  return true;
+}
+
+// Handle thumbnail upload for video podcast
+async function handlePodcastThumbnailUpload(chatId: number, userId: number, photo: any): Promise<boolean> {
+  const { data: pending } = await supabase
+    .from('admin_settings')
+    .select('value')
+    .eq('key', `pending_podcast_${userId}`)
+    .maybeSingle();
+
+  if (!pending) return false;
+
+  let state;
+  try {
+    state = JSON.parse(pending.value || '{}');
+  } catch {
+    return false;
+  }
+
+  if (state.type !== 'upload' || state.step !== 'thumbnail') return false;
+
+  // Get largest photo
+  const largestPhoto = photo[photo.length - 1];
+  const fileId = largestPhoto.file_id;
+
+  // Download from Telegram
+  const fileResponse = await fetch(`https://api.telegram.org/bot${ADMIN_BOT_TOKEN}/getFile?file_id=${fileId}`);
+  const fileData = await fileResponse.json();
+
+  if (!fileData.ok) {
+    await sendAdminMessage(chatId, '❌ Ошибка при получении обложки');
+    return true;
+  }
+
+  const filePath = fileData.result.file_path;
+  const downloadUrl = `https://api.telegram.org/file/bot${ADMIN_BOT_TOKEN}/${filePath}`;
+
+  const imageResponse = await fetch(downloadUrl);
+  const imageBlob = await imageResponse.blob();
+
+  const filename = `thumbnail_${Date.now()}_${userId}.jpg`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('podcast-videos')
+    .upload(filename, imageBlob, {
+      contentType: 'image/jpeg',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    console.error('Error uploading thumbnail:', uploadError);
+    await sendAdminMessage(chatId, '❌ Ошибка при загрузке обложки');
+    return true;
+  }
+
+  const { data: thumbnailUrl } = supabase.storage
+    .from('podcast-videos')
+    .getPublicUrl(filename);
+
+  // Save podcast
+  const { count } = await supabase
+    .from('podcasts')
+    .select('*', { count: 'exact', head: true });
+
+  if ((count || 0) >= MAX_PODCASTS) {
+    await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
+    await sendAdminMessage(chatId, '❌ Ошибка, загружено уже 10 роликов');
+    return true;
+  }
+
+  const { error } = await supabase.from('podcasts').insert({
+    youtube_url: '',
+    youtube_id: '',
+    title: state.title,
+    description: state.description,
+    video_url: state.video_url,
+    thumbnail_url: thumbnailUrl.publicUrl,
+  });
+
+  await supabase.from('admin_settings').delete().eq('key', `pending_podcast_${userId}`);
+
+  if (error) {
+    console.error('Error saving video podcast:', error);
+    await sendAdminMessage(chatId, '❌ Ошибка при сохранении');
+  } else {
+    await sendAdminMessage(chatId, `✅ Видео-подкаст "${state.title}" успешно добавлен! 🎉
+
+💡 Видео будет доступно без VPN`);
+  }
+  return true;
 }
 
 // Handle podcast delete list
@@ -4722,6 +4971,8 @@ async function handleCallbackQuery(callbackQuery: any) {
     await handleDeleteArticle(callbackQuery, param);
   } else if (action === 'podcast_add') {
     await handlePodcastAddStart(callbackQuery);
+  } else if (action === 'podcast_add_video') {
+    await handlePodcastAddVideoStart(callbackQuery);
   } else if (action === 'podcast_delete_list') {
     await handlePodcastDeleteList(callbackQuery);
   } else if (action === 'podcast_del') {
@@ -5938,12 +6189,28 @@ Deno.serve(async (req) => {
         return new Response('OK', { headers: corsHeaders });
       }
 
-      // FIRST: Check if this is a media upload for /hi command or /broadcast
+      // FIRST: Check if this is a media upload for /hi command or /broadcast or podcast
       if (photo || video || animation || document) {
         // Check broadcast media first
         const broadcastMediaHandled = await handleBroadcastMediaInput(chat.id, from.id, update.message);
         if (broadcastMediaHandled) {
           return new Response('OK', { headers: corsHeaders });
+        }
+        
+        // Check podcast video upload
+        if (video) {
+          const podcastVideoHandled = await handlePodcastVideoUpload(chat.id, from.id, video);
+          if (podcastVideoHandled) {
+            return new Response('OK', { headers: corsHeaders });
+          }
+        }
+
+        // Check podcast thumbnail upload
+        if (photo) {
+          const podcastThumbnailHandled = await handlePodcastThumbnailUpload(chat.id, from.id, photo);
+          if (podcastThumbnailHandled) {
+            return new Response('OK', { headers: corsHeaders });
+          }
         }
         
         const mediaHandled = await handleHiMediaUpload(chat.id, from.id, update.message);
