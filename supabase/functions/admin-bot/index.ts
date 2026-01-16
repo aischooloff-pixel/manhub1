@@ -2362,6 +2362,48 @@ ${preview}...`;
   await editAdminMessage(message.chat.id, message.message_id, articleMessage, { reply_markup: keyboard });
 }
 
+// Handle toggle pin for article
+async function handleTogglePin(callbackQuery: any, articleShortId: string) {
+  const { id, message } = callbackQuery;
+
+  const articleId = await getArticleIdByShortId(articleShortId);
+  if (!articleId) {
+    await answerCallbackQuery(id, '❌ Статья не найдена');
+    return;
+  }
+
+  // Get current pin status
+  const { data: article, error: fetchError } = await supabase
+    .from('articles')
+    .select('is_pinned, title')
+    .eq('id', articleId)
+    .maybeSingle();
+
+  if (fetchError || !article) {
+    await answerCallbackQuery(id, '❌ Статья не найдена');
+    return;
+  }
+
+  const newPinStatus = !article.is_pinned;
+
+  // Update pin status
+  const { error: updateError } = await supabase
+    .from('articles')
+    .update({ is_pinned: newPinStatus, updated_at: new Date().toISOString() })
+    .eq('id', articleId);
+
+  if (updateError) {
+    console.error('Error toggling pin:', updateError);
+    await answerCallbackQuery(id, '❌ Ошибка при изменении закрепления');
+    return;
+  }
+
+  await answerCallbackQuery(id, newPinStatus ? '📌 Статья закреплена' : '📌 Статья откреплена');
+  
+  // Refresh article view
+  await handleViewArticle(callbackQuery, articleShortId);
+}
+
 // Handle comments view for an article
 async function handleViewComments(callbackQuery: any, articleShortId: string, page: number = 0) {
   const { id, message } = callbackQuery;
@@ -2517,46 +2559,6 @@ async function handleDeleteComment(callbackQuery: any, commentId: string, articl
   
   // Refresh comments list
   await handleViewComments({ id, message, from: callbackQuery.from }, articleShortId, 0);
-}
-
-// Handle toggle pin article
-async function handleTogglePin(callbackQuery: any, articleShortId: string) {
-  const { id, message } = callbackQuery;
-
-  const articleId = await getArticleIdByShortId(articleShortId);
-  if (!articleId) {
-    await answerCallbackQuery(id, '❌ Статья не найдена');
-    return;
-  }
-
-  const { data: article } = await supabase
-    .from('articles')
-    .select('id, title, is_pinned')
-    .eq('id', articleId)
-    .maybeSingle();
-
-  if (!article) {
-    await answerCallbackQuery(id, '❌ Статья не найдена');
-    return;
-  }
-
-  const newPinned = !article.is_pinned;
-
-  const { error } = await supabase
-    .from('articles')
-    .update({ is_pinned: newPinned })
-    .eq('id', articleId);
-
-  if (error) {
-    console.error('Error toggling pin:', error);
-    await answerCallbackQuery(id, '❌ Ошибка');
-    return;
-  }
-
-  await answerCallbackQuery(id, newPinned ? '📌 Статья закреплена' : '📌 Статья откреплена');
-  
-  // Refresh article view
-  await handleViewArticle(callbackQuery, articleShortId);
 }
 
 // Handle delete article
@@ -4874,6 +4876,8 @@ async function handleCallbackQuery(callbackQuery: any) {
     await handleManualPaymentApprove(callbackQuery, param);
   } else if (action === 'manual_pay_reject') {
     await handleManualPaymentRejectStart(callbackQuery, param);
+  } else if (action === 'toggle_pin') {
+    await handleTogglePin(callbackQuery, param);
   }
 }
 

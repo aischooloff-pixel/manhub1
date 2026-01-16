@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Send, Image, Loader2, X, Video } from 'lucide-react';
+import { Send, Image, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Article } from '@/types';
 
@@ -34,7 +34,6 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'youtube' | 'video' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (article) {
@@ -54,44 +53,38 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Можно загружать только изображения');
-        return;
+      // Handle image files
+      if (file.type.startsWith('image/')) {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('Размер изображения не должен превышать 5 МБ');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          setMediaPreview(base64);
+          setMediaType('image');
+          setFormData({ ...formData, media_url: base64 });
+        };
+        reader.readAsDataURL(file);
       }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Размер файла не должен превышать 5 МБ');
-        return;
+      // Handle video files
+      else if (file.type.startsWith('video/')) {
+        if (file.size > 50 * 1024 * 1024) {
+          toast.error('Размер видео не должен превышать 50 МБ');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          setMediaPreview(base64);
+          setMediaType('video');
+          setFormData({ ...formData, media_url: base64 });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast.error('Можно загружать только изображения или видео');
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setMediaPreview(base64);
-        setMediaType('image');
-        setFormData({ ...formData, media_url: base64 });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('video/')) {
-        toast.error('Можно загружать только видео');
-        return;
-      }
-      if (file.size > 50 * 1024 * 1024) {
-        toast.error('Размер видео не должен превышать 50 МБ');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setMediaPreview(base64);
-        setMediaType('video');
-        setFormData({ ...formData, media_url: base64 });
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -101,9 +94,6 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
     setFormData({ ...formData, media_url: '' });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
-    }
-    if (videoInputRef.current) {
-      videoInputRef.current.value = '';
     }
   };
 
@@ -188,15 +178,8 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               onChange={handleFileSelect}
-              className="hidden"
-            />
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept="video/*"
-              onChange={handleVideoSelect}
               className="hidden"
             />
             
@@ -226,26 +209,15 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Image className="h-4 w-4" />
-                  Фото
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 gap-2"
-                  onClick={() => videoInputRef.current?.click()}
-                >
-                  <Video className="h-4 w-4" />
-                  Видео
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Image className="h-4 w-4" />
+                Загрузить фото или видео
+              </Button>
             )}
           </div>
 
