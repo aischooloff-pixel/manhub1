@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, MessageCircle, Bookmark, Clock, Check, XCircle, ChevronDown, ChevronUp, Play, Crown, Share2 } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Clock, Check, XCircle, ChevronDown, ChevronUp, Play, Crown, Share2, Eye } from 'lucide-react';
 import { Article } from '@/types';
 import { cn } from '@/lib/utils';
 import { AuthorBadge } from '@/components/profile/UserBadges';
@@ -98,6 +98,10 @@ export function ArticleListCard({
                 )}
               </span>
               <span>•</span>
+              <div className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {article.views_count || 0}
+              </div>
               <div className="flex items-center gap-1">
                 <Heart className="h-3 w-3" />
                 {article.likes_count}
