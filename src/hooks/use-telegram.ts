@@ -46,6 +46,11 @@ export function useTelegram() {
     return window.Telegram?.WebApp?.initData || null;
   };
 
+  const getStartParam = (): string | null => {
+    // @ts-ignore
+    return window.Telegram?.WebApp?.initDataUnsafe?.start_param || null;
+  };
+
   return {
     user,
     webApp,
@@ -53,5 +58,6 @@ export function useTelegram() {
     openTelegramLink,
     getBotUsername,
     getInitData,
+    getStartParam,
   };
 }
