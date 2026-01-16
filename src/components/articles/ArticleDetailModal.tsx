@@ -612,7 +612,7 @@ export function ArticleDetailModal({
                 <button
                   onClick={() => {
                     const shareUrl = `https://t.me/Man_Hub_bot/Hub?startapp=article_${article.id}`;
-                    const shareText = `${article.title}\n\n${article.preview || ''}`;
+                    const shareText = article.topic || article.title;
                     
                     // @ts-ignore - Telegram WebApp API
                     const tgWebApp = window.Telegram?.WebApp;
