@@ -19,10 +19,13 @@ import { mockCategories } from '@/data/mockData';
 import { Category, Article as ArticleType } from '@/types';
 import { useProfile } from '@/hooks/use-profile';
 import { useArticles, Article } from '@/hooks/use-articles';
+import { useTelegram } from '@/hooks/use-telegram';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Index() {
   const { profile, loading: profileLoading, isAdmin } = useProfile();
   const { getApprovedArticles } = useArticles();
+  const { getStartParam } = useTelegram();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isPremiumOpen, setIsPremiumOpen] = useState(false);
   const { showWelcome, closeWelcome } = useWelcomeModal();
@@ -32,6 +35,7 @@ export default function Index() {
   const [isArticleDetailOpen, setIsArticleDetailOpen] = useState(false);
   const [publicProfileAuthorId, setPublicProfileAuthorId] = useState<string | null>(null);
   const [isPublicProfileOpen, setIsPublicProfileOpen] = useState(false);
+  const [startParamHandled, setStartParamHandled] = useState(false);
 
   const handleAuthorClick = (authorId: string) => {
     setPublicProfileAuthorId(authorId);
@@ -90,6 +94,45 @@ export default function Index() {
     };
     loadArticles();
   }, [getApprovedArticles]);
+
+  // Handle start_param for deep linking (e.g. ?startapp=article_UUID)
+  useEffect(() => {
+    if (startParamHandled || articlesLoading) return;
+    
+    const startParam = getStartParam();
+    if (startParam && startParam.startsWith('article_')) {
+      const articleId = startParam.replace('article_', '');
+      console.log('[Index] Opening article from start_param:', articleId);
+      
+      // Try to find in loaded articles first
+      const article = articles.find(a => a.id === articleId);
+      if (article) {
+        handleArticleClick(article);
+        setStartParamHandled(true);
+      } else {
+        // Fetch article directly from database
+        supabase
+          .from('articles')
+          .select(`
+            *,
+            author:profiles!articles_author_id_fkey(
+              id, first_name, last_name, username, avatar_url, 
+              is_premium, reputation, created_at, subscription_tier,
+              show_name, show_username, show_avatar
+            )
+          `)
+          .eq('id', articleId)
+          .eq('status', 'approved')
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data) {
+              handleArticleClick(data as Article);
+            }
+            setStartParamHandled(true);
+          });
+      }
+    }
+  }, [articles, articlesLoading, startParamHandled, getStartParam]);
 
   // Listen for open-article-detail event from notifications
   useEffect(() => {

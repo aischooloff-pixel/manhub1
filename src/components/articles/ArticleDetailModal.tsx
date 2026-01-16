@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Heart, MessageCircle, Bookmark, Send, Loader2, Crown, Calendar, FileText, Star, Flag, ChevronDown, ChevronUp, Reply, TrendingUp } from 'lucide-react';
+import { X, Heart, MessageCircle, Bookmark, Send, Loader2, Crown, Calendar, FileText, Star, Flag, ChevronDown, ChevronUp, Reply, TrendingUp, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -608,6 +609,25 @@ export function ArticleDetailModal({
                   <TrendingUp className="h-4 w-4" />
                   <span className="text-sm">+{viewsCount}</span>
                 </div>
+                <button
+                  onClick={() => {
+                    const shareUrl = `https://t.me/Man_Hub_bot/Hub?startapp=article_${article.id}`;
+                    if (navigator.share) {
+                      navigator.share({
+                        title: article.title,
+                        text: article.preview || article.title,
+                        url: shareUrl,
+                      }).catch(() => {});
+                    } else {
+                      navigator.clipboard.writeText(shareUrl);
+                      toast.success('Ссылка скопирована');
+                    }
+                  }}
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  title="Поделиться"
+                >
+                  <Share2 className="h-5 w-5" />
+                </button>
                 <button
                   onClick={() => setIsReportOpen(true)}
                   className="text-muted-foreground hover:text-destructive transition-colors"
