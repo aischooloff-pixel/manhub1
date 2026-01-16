@@ -612,13 +612,17 @@ export function ArticleDetailModal({
                 <button
                   onClick={() => {
                     const shareUrl = `https://t.me/Man_Hub_bot/Hub?startapp=article_${article.id}`;
-                    if (navigator.share) {
-                      navigator.share({
-                        title: article.title,
-                        text: article.preview || article.title,
-                        url: shareUrl,
-                      }).catch(() => {});
+                    const shareText = `${article.title}\n\n${article.preview || ''}`;
+                    
+                    // @ts-ignore - Telegram WebApp API
+                    const tgWebApp = window.Telegram?.WebApp;
+                    
+                    if (tgWebApp) {
+                      // Use Telegram's native share via t.me/share/url
+                      const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+                      tgWebApp.openTelegramLink(telegramShareUrl);
                     } else {
+                      // Fallback for non-Telegram environment
                       navigator.clipboard.writeText(shareUrl);
                       toast.success('Ссылка скопирована');
                     }
