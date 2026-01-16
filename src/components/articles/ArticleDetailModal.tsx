@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Heart, MessageCircle, Bookmark, Send, Loader2, Crown, Calendar, FileText, Star, Flag, ChevronDown, ChevronUp, Reply, TrendingUp, Share2 } from 'lucide-react';
+import { X, Heart, MessageCircle, Bookmark, Send, Loader2, Crown, Calendar, FileText, Star, Flag, ChevronDown, ChevronUp, Reply, Share2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -606,8 +606,8 @@ export function ArticleDetailModal({
               <div className="flex items-center gap-3">
                 {/* Views */}
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 text-muted-foreground">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm">+{viewsCount}</span>
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm">{viewsCount}</span>
                 </div>
                 <button
                   onClick={() => {

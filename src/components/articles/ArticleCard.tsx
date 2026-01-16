@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Heart, MessageCircle, Bookmark, TrendingUp, Share2, Crown, Eye } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Share2, Crown, Eye } from 'lucide-react';
 import { Article } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -87,8 +87,8 @@ export const ArticleCard = forwardRef<HTMLElement, ArticleCardProps>(
               <span>{article.comments_count}</span>
             </button>
             <button className="flex items-center gap-1 text-xs transition-colors hover:text-foreground">
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span>+{article.rep_score}</span>
+              <Eye className="h-3.5 w-3.5" />
+              <span>{article.views_count || 0}</span>
             </button>
           </div>
         </div>
@@ -237,10 +237,6 @@ export const ArticleCard = forwardRef<HTMLElement, ArticleCardProps>(
             <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
               <Eye className="h-3 w-3" />
               {article.views_count || 0}
-            </span>
-            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-              <TrendingUp className="h-3 w-3" />
-              +{article.rep_score}
             </span>
             <Button
               variant="ghost"

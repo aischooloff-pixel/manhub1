@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Heart, MessageCircle, Bookmark, ChevronDown, ChevronUp, Play } from 'lucide-react';
+import { X, Heart, MessageCircle, Bookmark, ChevronDown, ChevronUp, Play, Eye } from 'lucide-react';
 import { Article } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -69,6 +69,10 @@ export function AllArticlesModal({ isOpen, onClose, articles, title = 'Все с
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{article.is_anonymous ? 'Аноним' : article.author?.first_name}</span>
                           <span>•</span>
+                          <div className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            {article.views_count || 0}
+                          </div>
                           <div className="flex items-center gap-1">
                             <Heart className="h-3 w-3" />
                             {article.likes_count}
