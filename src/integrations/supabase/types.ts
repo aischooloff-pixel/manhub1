@@ -268,7 +268,6 @@ export type Database = {
           favorites_count: number | null
           id: string
           is_anonymous: boolean | null
-          is_pinned: boolean | null
           likes_count: number | null
           media_type: string | null
           media_url: string | null
@@ -295,7 +294,6 @@ export type Database = {
           favorites_count?: number | null
           id?: string
           is_anonymous?: boolean | null
-          is_pinned?: boolean | null
           likes_count?: number | null
           media_type?: string | null
           media_url?: string | null
@@ -322,7 +320,6 @@ export type Database = {
           favorites_count?: number | null
           id?: string
           is_anonymous?: boolean | null
-          is_pinned?: boolean | null
           likes_count?: number | null
           media_type?: string | null
           media_url?: string | null
