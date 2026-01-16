@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Search, Heart, MessageCircle, Bookmark, TrendingUp, Share2, Loader2, Plus, Pin, Filter } from 'lucide-react';
+import { X, Search, Heart, MessageCircle, Bookmark, TrendingUp, Share2, Loader2, Plus } from 'lucide-react';
 import { Article } from '@/types';
 import { Category } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -165,12 +165,6 @@ export function FullArticlesModal({
     displayedArticles = [...displayedArticles].sort((a, b) => (b.author?.reputation || 0) - (a.author?.reputation || 0));
   }
 
-  // Sort pinned articles to top
-  displayedArticles = [...displayedArticles].sort((a, b) => {
-    if ((a as any).is_pinned && !(b as any).is_pinned) return -1;
-    if (!(a as any).is_pinned && (b as any).is_pinned) return 1;
-    return 0;
-  });
 
   return (
     <>
@@ -263,17 +257,11 @@ export function FullArticlesModal({
                     <button
                       key={article.id}
                       onClick={() => setSelectedArticle(article)}
-                      className={cn(
-                        'w-full text-left rounded-2xl bg-card p-4 transition-all duration-300 animate-slide-up hover:ring-1 hover:ring-primary/30',
-                        (article as any).is_pinned && 'ring-1 ring-primary/50 bg-primary/5'
-                      )}
+                      className="w-full text-left rounded-2xl bg-card p-4 transition-all duration-300 animate-slide-up hover:ring-1 hover:ring-primary/30"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       {/* Author Row */}
                       <div className="flex items-center gap-3 mb-3">
-                        {(article as any).is_pinned && (
-                          <Pin className="h-4 w-4 text-primary fill-primary flex-shrink-0" />
-                        )}
                         <img
                           src={article.is_anonymous ? '/placeholder.svg' : article.author?.avatar_url || '/placeholder.svg'}
                           alt=""

@@ -2341,17 +2341,8 @@ async function handleViewArticle(callbackQuery: any, articleShortId: string) {
 📝 <b>Превью:</b>
 ${preview}...`;
 
-  const { data: isPinned } = await supabase
-    .from('articles')
-    .select('is_pinned')
-    .eq('id', articleId)
-    .maybeSingle();
-
-  const pinButtonText = isPinned?.is_pinned ? '📌 Открепить' : '📌 Закрепить';
-
   const keyboard = {
     inline_keyboard: [
-      [{ text: pinButtonText, callback_data: `toggle_pin:${articleShortId}` }],
       [{ text: '💬 Комментарии', callback_data: `comments:${articleShortId}:0` }],
       [{ text: '🗑 Удалить статью', callback_data: `delete_article:${articleShortId}` }],
       [{ text: '◀️ Назад к списку', callback_data: 'articles:0' }],
@@ -2362,47 +2353,6 @@ ${preview}...`;
   await editAdminMessage(message.chat.id, message.message_id, articleMessage, { reply_markup: keyboard });
 }
 
-// Handle toggle pin for article
-async function handleTogglePin(callbackQuery: any, articleShortId: string) {
-  const { id, message } = callbackQuery;
-
-  const articleId = await getArticleIdByShortId(articleShortId);
-  if (!articleId) {
-    await answerCallbackQuery(id, '❌ Статья не найдена');
-    return;
-  }
-
-  // Get current pin status
-  const { data: article, error: fetchError } = await supabase
-    .from('articles')
-    .select('is_pinned, title')
-    .eq('id', articleId)
-    .maybeSingle();
-
-  if (fetchError || !article) {
-    await answerCallbackQuery(id, '❌ Статья не найдена');
-    return;
-  }
-
-  const newPinStatus = !article.is_pinned;
-
-  // Update pin status
-  const { error: updateError } = await supabase
-    .from('articles')
-    .update({ is_pinned: newPinStatus, updated_at: new Date().toISOString() })
-    .eq('id', articleId);
-
-  if (updateError) {
-    console.error('Error toggling pin:', updateError);
-    await answerCallbackQuery(id, '❌ Ошибка при изменении закрепления');
-    return;
-  }
-
-  await answerCallbackQuery(id, newPinStatus ? '📌 Статья закреплена' : '📌 Статья откреплена');
-  
-  // Refresh article view
-  await handleViewArticle(callbackQuery, articleShortId);
-}
 
 // Handle comments view for an article
 async function handleViewComments(callbackQuery: any, articleShortId: string, page: number = 0) {
@@ -4876,8 +4826,6 @@ async function handleCallbackQuery(callbackQuery: any) {
     await handleManualPaymentApprove(callbackQuery, param);
   } else if (action === 'manual_pay_reject') {
     await handleManualPaymentRejectStart(callbackQuery, param);
-  } else if (action === 'toggle_pin') {
-    await handleTogglePin(callbackQuery, param);
   }
 }
 
