@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Search, Heart, MessageCircle, Bookmark, TrendingUp, Share2, Loader2, Plus } from 'lucide-react';
+import { X, Search, Heart, MessageCircle, Bookmark, Share2, Loader2, Plus, Eye, Award } from 'lucide-react';
 import { Article } from '@/types';
 import { Category } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -229,7 +229,7 @@ export function FullArticlesModal({
                   onClick={() => handleFilterChange(activeFilter === 'verified' ? 'none' : 'verified')}
                   className="gap-1.5"
                 >
-                  <TrendingUp className="h-3.5 w-3.5" />
+                  <Award className="h-3.5 w-3.5" />
                   Проверенные авторы
                 </Button>
               </div>
@@ -307,8 +307,8 @@ export function FullArticlesModal({
                           <div className="flex items-center gap-3">
                             {/* Views */}
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/50 text-muted-foreground">
-                              <TrendingUp className="h-4 w-4" />
-                              <span className="text-sm">+{article.views_count || 0}</span>
+                              <Eye className="h-4 w-4" />
+                              <span className="text-sm">{article.views_count || 0}</span>
                             </div>
                             {/* Share */}
                             <Share2 className="h-5 w-5 text-muted-foreground" />
