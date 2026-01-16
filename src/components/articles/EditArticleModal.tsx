@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Send, Image, Loader2, X } from 'lucide-react';
+import { Send, Image, Loader2, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { Article } from '@/types';
 
@@ -32,7 +32,9 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
     sources: '',
   });
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'youtube' | 'video' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (article) {
@@ -45,6 +47,7 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
         sources: article.sources?.join(', ') || '',
       });
       setMediaPreview(article.media_url || null);
+      setMediaType(article.media_type as 'image' | 'youtube' | 'video' | null);
     }
   }, [article]);
 
@@ -63,6 +66,29 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
       reader.onloadend = () => {
         const base64 = reader.result as string;
         setMediaPreview(base64);
+        setMediaType('image');
+        setFormData({ ...formData, media_url: base64 });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('video/')) {
+        toast.error('Можно загружать только видео');
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error('Размер видео не должен превышать 50 МБ');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setMediaPreview(base64);
+        setMediaType('video');
         setFormData({ ...formData, media_url: base64 });
       };
       reader.readAsDataURL(file);
@@ -71,9 +97,13 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
 
   const clearMedia = () => {
     setMediaPreview(null);
+    setMediaType(null);
     setFormData({ ...formData, media_url: '' });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
     }
   };
 
@@ -162,14 +192,29 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
               onChange={handleFileSelect}
               className="hidden"
             />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleVideoSelect}
+              className="hidden"
+            />
             
             {mediaPreview ? (
               <div className="relative rounded-xl border border-border overflow-hidden aspect-[4/3]">
-                <img
-                  src={mediaPreview}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
+                {mediaType === 'video' ? (
+                  <video
+                    src={mediaPreview}
+                    className="w-full h-full object-cover"
+                    controls
+                  />
+                ) : (
+                  <img
+                    src={mediaPreview}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                )}
                 <Button
                   type="button"
                   variant="destructive"
@@ -181,15 +226,26 @@ export function EditArticleModal({ isOpen, onClose, article, onSave }: EditArtic
                 </Button>
               </div>
             ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Image className="h-4 w-4" />
-                Добавить медиа
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Image className="h-4 w-4" />
+                  Фото
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  <Video className="h-4 w-4" />
+                  Видео
+                </Button>
+              </div>
             )}
           </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Search, Heart, MessageCircle, Bookmark, TrendingUp, Share2, Loader2, Plus } from 'lucide-react';
+import { X, Search, Heart, MessageCircle, Bookmark, TrendingUp, Share2, Loader2, Plus, Pin, Filter } from 'lucide-react';
 import { Article } from '@/types';
 import { Category } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,9 @@ import { PublicProfileModal } from '@/components/profile/PublicProfileModal';
 import { cn } from '@/lib/utils';
 import { mockCategories } from '@/data/mockData';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+type FilterType = 'none' | 'popular' | 'verified';
 
 interface FullArticlesModalProps {
   isOpen: boolean;
@@ -34,6 +37,7 @@ export function FullArticlesModal({
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedAuthorId, setSelectedAuthorId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('none');
 
   const handleAuthorClick = (authorId: string) => {
     setSelectedArticle(null);
@@ -45,6 +49,7 @@ export function FullArticlesModal({
       setArticles(initialArticles);
       setSelectedCategory(initialCategory || null);
       setSearchQuery('');
+      setActiveFilter('none');
     }
   }, [isOpen, initialArticles, initialCategory]);
 
@@ -110,6 +115,7 @@ export function FullArticlesModal({
   const handleCategoryChange = (cat: Category | null) => {
     setSelectedCategory(cat);
     setSearchQuery('');
+    setActiveFilter('none');
     if (cat) {
       setArticles(initialArticles.filter(a => a.category_id === cat.id));
     } else {
@@ -117,16 +123,54 @@ export function FullArticlesModal({
     }
   };
 
+  const handleFilterChange = (filter: FilterType) => {
+    setActiveFilter(filter);
+    setSearchQuery('');
+    setSelectedCategory(null);
+  };
+
   const handleArticleCreated = () => {
     setIsCreateModalOpen(false);
     onArticleCreated?.();
   };
 
+  const handleShare = (e: React.MouseEvent, article: Article) => {
+    e.stopPropagation();
+    const shareUrl = `https://t.me/Man_Hub_bot/Hub?startapp=article_${article.id}`;
+    const shareText = `${(article as any).topic || article.title}`;
+    
+    // @ts-ignore - Telegram WebApp API
+    const tgWebApp = window.Telegram?.WebApp;
+    
+    if (tgWebApp) {
+      const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+      tgWebApp.openTelegramLink(telegramShareUrl);
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Ссылка скопирована');
+    }
+  };
+
   if (!isOpen) return null;
 
-  const displayedArticles = selectedCategory && !searchQuery
+  // Sort and filter articles based on active filter
+  let displayedArticles = selectedCategory && !searchQuery
     ? articles.filter(a => a.category_id === selectedCategory.id)
     : articles;
+
+  // Apply sorting based on filter
+  if (activeFilter === 'popular') {
+    displayedArticles = [...displayedArticles].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
+  } else if (activeFilter === 'verified') {
+    displayedArticles = [...displayedArticles].sort((a, b) => (b.author?.reputation || 0) - (a.author?.reputation || 0));
+  }
+
+  // Sort pinned articles to top
+  displayedArticles = [...displayedArticles].sort((a, b) => {
+    if ((a as any).is_pinned && !(b as any).is_pinned) return -1;
+    if (!(a as any).is_pinned && (b as any).is_pinned) return 1;
+    return 0;
+  });
 
   return (
     <>
@@ -173,6 +217,28 @@ export function FullArticlesModal({
                   }}
                 />
               </div>
+
+              {/* Filters */}
+              <div className="flex gap-2 mt-3">
+                <Button
+                  variant={activeFilter === 'popular' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleFilterChange(activeFilter === 'popular' ? 'none' : 'popular')}
+                  className="gap-1.5"
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  Популярные
+                </Button>
+                <Button
+                  variant={activeFilter === 'verified' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleFilterChange(activeFilter === 'verified' ? 'none' : 'verified')}
+                  className="gap-1.5"
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Проверенные авторы
+                </Button>
+              </div>
             </div>
 
             {/* Categories */}
@@ -198,12 +264,16 @@ export function FullArticlesModal({
                       key={article.id}
                       onClick={() => setSelectedArticle(article)}
                       className={cn(
-                        'w-full text-left rounded-2xl bg-card p-4 transition-all duration-300 animate-slide-up hover:ring-1 hover:ring-primary/30'
+                        'w-full text-left rounded-2xl bg-card p-4 transition-all duration-300 animate-slide-up hover:ring-1 hover:ring-primary/30',
+                        (article as any).is_pinned && 'ring-1 ring-primary/50 bg-primary/5'
                       )}
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       {/* Author Row */}
                       <div className="flex items-center gap-3 mb-3">
+                        {(article as any).is_pinned && (
+                          <Pin className="h-4 w-4 text-primary fill-primary flex-shrink-0" />
+                        )}
                         <img
                           src={article.is_anonymous ? '/placeholder.svg' : article.author?.avatar_url || '/placeholder.svg'}
                           alt=""
