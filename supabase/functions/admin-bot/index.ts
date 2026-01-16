@@ -87,8 +87,26 @@ async function sendUserMessage(chatId: string | number, text: string) {
   return response.json();
 }
 
+// Get file URL from Admin Bot (to transfer files between bots)
+async function getFileUrl(fileId: string): Promise<string | null> {
+  try {
+    const getFileUrl = `https://api.telegram.org/bot${ADMIN_BOT_TOKEN}/getFile?file_id=${fileId}`;
+    const response = await fetch(getFileUrl);
+    const result = await response.json();
+    
+    if (result.ok && result.result?.file_path) {
+      return `https://api.telegram.org/file/bot${ADMIN_BOT_TOKEN}/${result.result.file_path}`;
+    }
+    console.error('Failed to get file URL:', result);
+    return null;
+  } catch (e) {
+    console.error('Error getting file URL:', e);
+    return null;
+  }
+}
+
 // Send photo to user via User Bot
-async function sendUserPhoto(chatId: string | number, photoId: string, caption?: string) {
+async function sendUserPhoto(chatId: string | number, photoIdOrUrl: string, caption?: string) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
   
   const response = await fetch(url, {
@@ -96,7 +114,7 @@ async function sendUserPhoto(chatId: string | number, photoId: string, caption?:
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      photo: photoId,
+      photo: photoIdOrUrl,
       caption,
       parse_mode: 'HTML',
     }),
@@ -106,7 +124,7 @@ async function sendUserPhoto(chatId: string | number, photoId: string, caption?:
 }
 
 // Send video to user via User Bot
-async function sendUserVideo(chatId: string | number, videoId: string, caption?: string) {
+async function sendUserVideo(chatId: string | number, videoIdOrUrl: string, caption?: string) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`;
   
   const response = await fetch(url, {
@@ -114,7 +132,7 @@ async function sendUserVideo(chatId: string | number, videoId: string, caption?:
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      video: videoId,
+      video: videoIdOrUrl,
       caption,
       parse_mode: 'HTML',
     }),
@@ -3629,15 +3647,26 @@ async function handleBroadcastConfirm(callbackQuery: any) {
     mediaType: state.media_type,
   });
 
+  // Convert file_id to URL once before the loop (file_id from Admin Bot doesn't work with User Bot)
+  let mediaUrl: string | null = null;
+  if (state.media_id) {
+    mediaUrl = await getFileUrl(state.media_id);
+    if (!mediaUrl) {
+      await sendAdminMessage(message.chat.id, '⚠️ Не удалось получить URL медиа, рассылка будет только текстовой');
+    } else {
+      console.log('Media URL obtained:', mediaUrl);
+    }
+  }
+
   for (const user of users) {
     if (!user.telegram_id) continue;
 
     try {
       let result: any;
-      if (state.media_id && state.media_type === 'photo') {
-        result = await sendUserPhoto(user.telegram_id, state.media_id, broadcastText);
-      } else if (state.media_id && state.media_type === 'video') {
-        result = await sendUserVideo(user.telegram_id, state.media_id, broadcastText);
+      if (mediaUrl && state.media_type === 'photo') {
+        result = await sendUserPhoto(user.telegram_id, mediaUrl, broadcastText);
+      } else if (mediaUrl && state.media_type === 'video') {
+        result = await sendUserVideo(user.telegram_id, mediaUrl, broadcastText);
       } else {
         result = await sendUserMessage(user.telegram_id, broadcastText);
       }
