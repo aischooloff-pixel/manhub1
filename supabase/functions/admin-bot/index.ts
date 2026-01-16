@@ -322,11 +322,11 @@ async function handleStats(chatId: number, userId: number) {
     .from('profiles')
     .select('*', { count: 'exact', head: true });
 
-  // Get premium user count
+  // Get paid users count (Plus + Premium tiers)
   const { count: premiumCount } = await supabase
     .from('profiles')
     .select('*', { count: 'exact', head: true })
-    .eq('is_premium', true);
+    .in('subscription_tier', ['plus', 'premium']);
 
   // Get blocked user count
   const { count: blockedCount } = await supabase
@@ -2341,8 +2341,17 @@ async function handleViewArticle(callbackQuery: any, articleShortId: string) {
 📝 <b>Превью:</b>
 ${preview}...`;
 
+  const { data: isPinned } = await supabase
+    .from('articles')
+    .select('is_pinned')
+    .eq('id', articleId)
+    .maybeSingle();
+
+  const pinButtonText = isPinned?.is_pinned ? '📌 Открепить' : '📌 Закрепить';
+
   const keyboard = {
     inline_keyboard: [
+      [{ text: pinButtonText, callback_data: `toggle_pin:${articleShortId}` }],
       [{ text: '💬 Комментарии', callback_data: `comments:${articleShortId}:0` }],
       [{ text: '🗑 Удалить статью', callback_data: `delete_article:${articleShortId}` }],
       [{ text: '◀️ Назад к списку', callback_data: 'articles:0' }],
@@ -2508,6 +2517,46 @@ async function handleDeleteComment(callbackQuery: any, commentId: string, articl
   
   // Refresh comments list
   await handleViewComments({ id, message, from: callbackQuery.from }, articleShortId, 0);
+}
+
+// Handle toggle pin article
+async function handleTogglePin(callbackQuery: any, articleShortId: string) {
+  const { id, message } = callbackQuery;
+
+  const articleId = await getArticleIdByShortId(articleShortId);
+  if (!articleId) {
+    await answerCallbackQuery(id, '❌ Статья не найдена');
+    return;
+  }
+
+  const { data: article } = await supabase
+    .from('articles')
+    .select('id, title, is_pinned')
+    .eq('id', articleId)
+    .maybeSingle();
+
+  if (!article) {
+    await answerCallbackQuery(id, '❌ Статья не найдена');
+    return;
+  }
+
+  const newPinned = !article.is_pinned;
+
+  const { error } = await supabase
+    .from('articles')
+    .update({ is_pinned: newPinned })
+    .eq('id', articleId);
+
+  if (error) {
+    console.error('Error toggling pin:', error);
+    await answerCallbackQuery(id, '❌ Ошибка');
+    return;
+  }
+
+  await answerCallbackQuery(id, newPinned ? '📌 Статья закреплена' : '📌 Статья откреплена');
+  
+  // Refresh article view
+  await handleViewArticle(callbackQuery, articleShortId);
 }
 
 // Handle delete article

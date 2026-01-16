@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { mockCategories } from '@/data/mockData';
-import { Send, Image, Loader2, X } from 'lucide-react';
+import { Send, Image, Loader2, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { useArticles } from '@/hooks/use-articles';
 import { UpgradeToPlusModal } from '@/components/profile/UpgradeToPlusModal';
@@ -53,8 +53,9 @@ export function CreateArticleModal({ isOpen, onClose, onSuccess, onDailyLimitRea
     sources: '',
   });
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<'image' | 'youtube' | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'youtube' | 'video' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -72,6 +73,28 @@ export function CreateArticleModal({ isOpen, onClose, onSuccess, onDailyLimitRea
         const base64 = reader.result as string;
         setMediaPreview(base64);
         setMediaType('image');
+        setFormData({ ...formData, media_url: base64 });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('video/')) {
+        toast.error('Можно загружать только видео');
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error('Размер видео не должен превышать 50 МБ');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setMediaPreview(base64);
+        setMediaType('video');
         setFormData({ ...formData, media_url: base64 });
       };
       reader.readAsDataURL(file);
@@ -101,6 +124,9 @@ export function CreateArticleModal({ isOpen, onClose, onSuccess, onDailyLimitRea
     setFormData({ ...formData, media_url: '' });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
     }
   };
 
@@ -238,14 +264,29 @@ export function CreateArticleModal({ isOpen, onClose, onSuccess, onDailyLimitRea
               onChange={handleFileSelect}
               className="hidden"
             />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleVideoSelect}
+              className="hidden"
+            />
             
             {mediaPreview ? (
               <div className="relative rounded-xl border border-border overflow-hidden aspect-[4/3]">
-                <img
-                  src={mediaPreview}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
+                {mediaType === 'video' ? (
+                  <video
+                    src={mediaPreview}
+                    className="w-full h-full object-cover"
+                    controls
+                  />
+                ) : (
+                  <img
+                    src={mediaPreview}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                )}
                 <Button
                   type="button"
                   variant="destructive"
@@ -272,6 +313,15 @@ export function CreateArticleModal({ isOpen, onClose, onSuccess, onDailyLimitRea
                   title="Загрузить изображение"
                 >
                   <Image className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => videoInputRef.current?.click()}
+                  title="Загрузить видео"
+                >
+                  <Video className="h-4 w-4" />
                 </Button>
               </div>
             )}

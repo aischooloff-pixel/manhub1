@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Heart, MessageCircle, Bookmark, Clock, Check, XCircle, ChevronDown, ChevronUp, Play, Crown } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Clock, Check, XCircle, ChevronDown, ChevronUp, Play, Crown, Share2, Pin } from 'lucide-react';
 import { Article } from '@/types';
 import { cn } from '@/lib/utils';
 import { AuthorBadge } from '@/components/profile/UserBadges';
+import { toast } from 'sonner';
 
 interface ArticleListCardProps {
   article: Article;
@@ -11,6 +12,7 @@ interface ArticleListCardProps {
   showStatus?: boolean;
   onClick?: () => void;
   isExpanded?: boolean;
+  showPinBadge?: boolean;
 }
 
 export function ArticleListCard({ 
@@ -19,8 +21,25 @@ export function ArticleListCard({
   style, 
   showStatus,
   onClick,
-  isExpanded = false
+  isExpanded = false,
+  showPinBadge = false
 }: ArticleListCardProps) {
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `https://t.me/Man_Hub_bot/Hub?startapp=article_${article.id}`;
+    const shareText = `${article.topic || article.title}`;
+    
+    // @ts-ignore - Telegram WebApp API
+    const tgWebApp = window.Telegram?.WebApp;
+    
+    if (tgWebApp) {
+      const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+      tgWebApp.openTelegramLink(telegramShareUrl);
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Ссылка скопирована');
+    }
+  };
   const getStatusBadge = () => {
     if (!showStatus) return null;
     switch (article.status) {
@@ -58,6 +77,12 @@ export function ArticleListCard({
         className="w-full px-4 py-3 text-left cursor-pointer"
       >
         <div className="flex items-center gap-3">
+          {/* Pin badge */}
+          {showPinBadge && (article as any).is_pinned && (
+            <div className="flex-shrink-0">
+              <Pin className="h-4 w-4 text-primary fill-primary" />
+            </div>
+          )}
           <img
             src={article.is_anonymous ? '/placeholder.svg' : article.author?.avatar_url || '/placeholder.svg'}
             alt={article.is_anonymous ? 'Аноним' : article.author?.first_name || 'Author'}
@@ -153,9 +178,17 @@ export function ArticleListCard({
                 <span className="text-sm">{article.comments_count}</span>
               </button>
             </div>
-            <button className="text-muted-foreground hover:text-primary transition-colors">
-              <Bookmark className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleShare}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+              <button className="text-muted-foreground hover:text-primary transition-colors">
+                <Bookmark className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

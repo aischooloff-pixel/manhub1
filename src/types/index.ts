@@ -39,7 +39,7 @@ export interface Article {
   preview: string;
   body: string;
   media_url?: string;
-  media_type?: 'image' | 'youtube';
+  media_type?: 'image' | 'youtube' | 'video';
   is_anonymous: boolean;
   status: 'draft' | 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;

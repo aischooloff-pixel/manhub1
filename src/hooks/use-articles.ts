@@ -48,7 +48,7 @@ export interface CreateArticleData {
   topic?: string;
   preview?: string;
   media_url?: string;
-  media_type?: 'image' | 'youtube';
+  media_type?: 'image' | 'youtube' | 'video';
   is_anonymous?: boolean;
   allow_comments?: boolean;
   sources?: string[];
