@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { VideoPlayer } from '@/components/ui/VideoPlayer';
 import { cn } from '@/lib/utils';
 
 interface PodcastPlayerPodcast {
@@ -9,6 +10,7 @@ interface PodcastPlayerPodcast {
   title: string;
   description?: string | null;
   thumbnail_url?: string | null;
+  video_url?: string | null;
   created_at?: string | null;
 }
 
@@ -20,6 +22,9 @@ interface PodcastPlayerModalProps {
 
 export function PodcastPlayerModal({ podcast, isOpen, onClose }: PodcastPlayerModalProps) {
   if (!isOpen || !podcast) return null;
+
+  // Use self-hosted video if available, otherwise fallback to YouTube
+  const hasVideoFile = !!podcast.video_url;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -50,18 +55,37 @@ export function PodcastPlayerModal({ podcast, isOpen, onClose }: PodcastPlayerMo
         </div>
 
         <div className="aspect-video w-full">
-          <iframe
-            src={`https://www.youtube.com/embed/${podcast.youtube_id}?autoplay=1&rel=0`}
-            title={podcast.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="h-full w-full"
-          />
+          {hasVideoFile ? (
+            <VideoPlayer
+              src={podcast.video_url!}
+              poster={podcast.thumbnail_url || undefined}
+              title={podcast.title}
+              autoPlay
+              className="h-full w-full"
+            />
+          ) : (
+            <iframe
+              src={`https://www.youtube.com/embed/${podcast.youtube_id}?autoplay=1&rel=0`}
+              title={podcast.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="h-full w-full"
+            />
+          )}
         </div>
 
         {podcast.description && (
           <div className="p-4">
             <p className="text-sm text-muted-foreground">{podcast.description}</p>
+          </div>
+        )}
+
+        {hasVideoFile && (
+          <div className="px-4 pb-4">
+            <span className="inline-flex items-center gap-1.5 text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              Работает без VPN
+            </span>
           </div>
         )}
       </div>

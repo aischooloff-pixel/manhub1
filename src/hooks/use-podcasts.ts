@@ -8,6 +8,7 @@ export interface Podcast {
   title: string;
   description: string | null;
   thumbnail_url: string | null;
+  video_url: string | null;
   created_at: string | null;
 }
 
